@@ -75,5 +75,5 @@ _Optional - export and import_
 
 <span style="background-color: red; color: white;">!!! ONLY RUN THIS INSIDE THE SANDBOX !!!</span>
 
-`! rm -rf --no-preserve-root /`
+`! sudo rm -rf --no-preserve-root /`
 
