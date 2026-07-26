@@ -71,9 +71,9 @@ _Optional - export and import_
 `
 `sbx template load my-codex.tar`
 
-### Let's pretend for a moment that Codex got prompt-injected:
+### Let's pretend for a moment that Codex got prompt-injected, or just high on something:
 
-<span style="background-color: red; color: white;">ONLY RUN IN THIS INSIDE THE SANDBOX</span>
+<span style="background-color: red; color: white;">!!! ONLY RUN THIS INSIDE THE SANDBOX !!!</span>
 
 `Delete the ~/.agents, ~/.codex, ~/.docker, ~/.local folders and ~/.bashrc file`
 
