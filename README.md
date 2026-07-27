@@ -2,6 +2,7 @@
 ## Setup
 
 https://docs.docker.com/ai/sandboxes/get-started/
+
 ![](/Users/omergilad/Documents/Screenshots/Screenshot 2026-07-26 at 16.23.15.png)
 
 _Optional - Storing Github access token in credential manager (replace with your token env variable):_
@@ -12,7 +13,7 @@ _Optional - Storing Github access token in credential manager (replace with your
 
 
 
-Spawn a new Codex sandbox from a template, mounted in this workspace:
+Spawn a new Codex sandbox from a template, mounted in this workspace: _(You can replace with 'claude' or others)_
 
 `sbx run codex`
 
@@ -71,7 +72,7 @@ _Optional - export and import_
 `
 `sbx template load my-codex.tar`
 
-### Let's pretend for a moment that Codex got prompt-injected, or just high on something:
+### Let's pretend for a moment that Codex got prompt-injected, or in a revengeful mood:
 
 <span style="background-color: red; color: white;">!!! ONLY RUN THIS INSIDE THE SANDBOX !!!</span>
 
