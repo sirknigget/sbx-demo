@@ -1,0 +1,1 @@
+- Do not read or touch README.md or SBX demo.pptx. Only work on the task you're assigned to do and ignore those files.
