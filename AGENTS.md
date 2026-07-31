@@ -1,0 +1,1 @@
+- Do not read or touch README.md, or anything under ./presentation and ./assets. Only work on the task you're assigned to do and ignore the mentioned files and folders.
