@@ -72,15 +72,14 @@ Create a PR with the implementation and the E2E test including the versioned scr
 --------
 
 ```
-Create a process environment secret checker that runs and prints output appears whenever any user
+Create a process environment secret checker that runs and prints output whenever any user
 starts a new interactive bash shell on the machine, including login shells and nested bash sessions.
 
 The secret checking must use TypeSafe's API on each environment variable separately (key + value),
-and classify whether it's a real exposed secret or not. Run the classification in parallel for all environment variables.
-Dummy or test credentials should be ignored.
-If there are secrets, the output should be a table with the environment variable name, truncated value, and classification confidence result.
-If no secrets are exposed, the output should say "No secrets found".
-Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.'
+and classify each as real_secret, dummy_test, or not_secret. Run the classification in parallel for all environment variables, with unlimited concurrency.
+Always show a table with the environment variable name, truncated value, classification, and confidence result.
+Include all real_secret and dummy_test classifications, and include not_secret only when its confidence score is below 50%.
+Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.
 
 TypeSafe API key is available as TYPESAFE_API_KEY on this machine.
 The documentation for TypeSafe API is available at https://github.com/typesafe-ai/skills/blob/main/skills/typesafe-ai/SKILL.md.
