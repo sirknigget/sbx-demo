@@ -1,1 +1,2 @@
-- Do not read or touch README.md, or anything under ./presentation and ./assets. Only work on the task you're assigned to do and ignore the mentioned files and folders.
+- Do not read or touch README.md, or anything under ./presentation and ./assets, unless explicitly requested by the user. 
+Only work on the task you're assigned to do and ignore the above mentioned files and folders.
