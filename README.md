@@ -14,6 +14,17 @@ _Optional - Storing Github access token in credential manager (replace with your
 
 `sbx secret set -g github -t "$GITHUB_AGENT_SANDBOX_TOKEN"`
 
+
+Optional - Store Jev API key in credential manager (replace with your token env variable):
+
+```
+sbx secret set-custom \
+--host api.typesafe.ai \
+--env TYPESAFE_API_KEY \
+--value <secret>
+```
+
+
 ## Basic commands
 
 
@@ -46,8 +57,38 @@ Execute a command in a running sandbox - in this example running interactive bas
 
 ### Example fully autonomous tasks to try (will touch system files, install tools and run Docker with no restrictions):
 
-1. `Add an ASCII animated ginger cat (total 5 rows of colored text, 2 seconds run time) that appears whenever any user starts a new interactive bash shell on the machine, including login shells and nested bash sessions. Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.`
-2. `Create a colorful 'Hello World' react app published on port 3000, served from inside a docker. For validation, you must install Playwright CLI globally, create an E2E test that creates a screenshot snapshot, and verify that the snapshot is created and matches the expected output. The app should be fully functional and accessible on a docker on port 3000 on task completion. Create a PR with the implementation and the E2E test including the versioned screenshot snapshot.`
+`Add an ASCII animated ginger cat (total 5 rows of colored text, 2 seconds run time) that appears whenever any user 
+    starts a new interactive bash shell on the machine, including login shells and nested bash sessions. 
+    Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.`
+
+--------
+
+`Create a colorful 'Hello World' react app published on port 3000, served from inside a docker. 
+For validation, you must install Playwright CLI globally, create an E2E test that creates a screenshot snapshot, 
+and verify that the snapshot is created and matches the expected output. 
+The app should be fully functional and accessible on a docker on port 3000 on task completion. 
+Create a PR with the implementation and the E2E test including the versioned screenshot snapshot.`
+
+--------
+
+```
+Create a process environment secret checker that runs and prints output appears whenever any user
+starts a new interactive bash shell on the machine, including login shells and nested bash sessions.
+
+The secret checking must use TypeSafe's API on each environment variable separately (key + value),
+and classify whether it's a real exposed secret or not. Run the classification in parallel for all environment variables.
+Dummy or test credentials should be ignored.
+If there are secrets, the output should be a table with the environment variable name, truncated value, and classification confidence result.
+If no secrets are exposed, the output should say "No secrets found".
+Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.'
+
+TypeSafe API key is available as TYPESAFE_API_KEY on this machine.
+The documentation for TypeSafe API is available at https://github.com/typesafe-ai/skills/blob/main/skills/typesafe-ai/SKILL.md.
+```
+
+
+
+
 
 
 ## Snapshots
