@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Replaces only demo-owned home files with links to the mounted dotfiles.
+# Keeps OMP runtime data and the installed OMP binary in the sandbox home.
+# Accepts the absolute mounted path to dotfiles/home as its only argument.
+set -euo pipefail
+
+# Reports incorrect input before changing the home directory.
+source_dir=${1:-}
+if [[ $# -ne 1 || "$source_dir" != /* || ! -f "$source_dir/.omp/agent/config.yml" ]]; then
+  printf 'Usage: link-tracked-home /absolute/path/to/dotfiles/home\n' >&2
+  exit 2
+fi
+source_dir=$(cd -- "$source_dir" && pwd -P)
+
+# Links each tracked file but does not replace unrelated directories or state.
+while IFS= read -r -d '' source; do
+  relative=${source#"$source_dir"/}
+  destination="$HOME/$relative"
+  if [[ -L "$destination" && $(readlink "$destination") == "$source" ]]; then
+    continue
+  fi
+  if [[ -d "$destination" && ! -L "$destination" ]]; then
+    printf 'Cannot replace directory: %s\n' "$destination" >&2
+    exit 1
+  fi
+  mkdir -p -- "$(dirname -- "$destination")"
+  ln -sfn -- "$source" "$destination"
+  printf 'linked %s\n' "$relative"
+done < <(find "$source_dir" -type f -print0)

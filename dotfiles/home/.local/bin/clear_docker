@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Shows Docker disk use or removes unused Docker objects in the sandbox.
+# Keeps the preview as the default and requires --confirm for removal.
+# Does not change home-directory caches or OMP data.
+set -euo pipefail
+
+# Dispatches the preview and the explicit cleanup action.
+case "${1:---dry-run}" in
+  --dry-run) [[ $# -eq 0 || $# -eq 1 ]] || exit 2; docker system df ;;
+  --confirm) [[ $# -eq 1 ]] || exit 2; docker system prune --all --volumes --force ;;
+  *) printf 'Usage: clear_docker [--dry-run|--confirm]\n' >&2; exit 2 ;;
+esac

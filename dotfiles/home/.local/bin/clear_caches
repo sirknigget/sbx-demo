@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Shows or clears only npm and Bun download caches in the sandbox home.
+# Does not remove project dependencies, OMP data, or Docker resources.
+# Requires --confirm before it removes files.
+set -euo pipefail
+
+# Selects preview or removal without changing unrelated paths.
+case "${1:---dry-run}" in
+  --dry-run) [[ $# -eq 0 || $# -eq 1 ]] || exit 2; action=preview ;;
+  --confirm) [[ $# -eq 1 ]] || exit 2; action=remove ;;
+  *) printf 'Usage: clear_caches [--dry-run|--confirm]\n' >&2; exit 2 ;;
+esac
+
+# Applies the selected action to known package download caches.
+for path in "$HOME/.npm/_cacache" "$HOME/.bun/install/cache"; do
+  [[ -d "$path" ]] || continue
+  if [[ "$action" == preview ]]; then
+    du -sh -- "$path"
+  else
+    rm -rf -- "$path"
+    printf 'removed %s\n' "$path"
+  fi
+done

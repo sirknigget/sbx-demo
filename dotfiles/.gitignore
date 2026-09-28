@@ -1,0 +1,2 @@
+# Keep the copied OMP database, private environment, and image archive untracked.
+/staging/

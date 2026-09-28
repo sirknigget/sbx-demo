@@ -1,0 +1,57 @@
+#!/bin/zsh
+
+# Opens the named sandbox from the current workspace directory.
+# Runs only OMP or an interactive Bash shell on the host.
+
+# Reads the mount path selected on the host; it can contain other projects.
+WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
+
+# Prints the supported host commands without starting the sandbox.
+usage() {
+  cat <<'EOF'
+Usage: dev-demo [omp|bash|--help]
+
+Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
+Run OMP (default) or an interactive Bash shell from that directory or any project inside it.
+The sandbox opens in the same workspace-relative directory.
+EOF
+}
+
+case "${1:-omp}" in
+  --help|-h|help)
+    usage
+    exit 0
+    ;;
+  omp|bash)
+    command="${1:-omp}"
+    ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac
+if (( $# > 1 )); then
+  usage >&2
+  exit 1
+fi
+
+if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
+  print -u2 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.'
+  exit 2
+fi
+WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
+
+current_dir="$(pwd -P)"
+if [[ "$current_dir" == "$WORKSPACE_ROOT" ]]; then
+  relative_dir=.
+elif [[ "$current_dir" == "$WORKSPACE_ROOT/"* ]]; then
+  relative_dir="${current_dir#$WORKSPACE_ROOT/}"
+else
+  print -u2 "Error: Current directory is not inside $WORKSPACE_ROOT"
+  exit 1
+fi
+
+if [[ "$command" == bash ]]; then
+  exec sbx run --name sbx-demo -- -c 'cd -- "$1" && exec bash -i' sh "$relative_dir"
+fi
+exec sbx run --name sbx-demo -- -c 'cd -- "$1" && exec omp' sh "$relative_dir"

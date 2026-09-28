@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# Builds the demo template on the host and creates the sbx-demo sandbox.
+# Optionally moves OMP state from an existing sandbox through the workspace.
+# Links tracked home files after the new sandbox mounts that workspace.
+set -euo pipefail
+
+# Reads the host workspace mount and the optional source sandbox name.
+usage() {
+  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n' >&2
+}
+workspace=''
+old_name=''
+while (($#)); do
+  case "$1" in
+    --workspace-mount|--old-name)
+      (($# >= 2)) && [[ -n "$2" ]] || { usage; exit 2; }
+      if [[ "$1" == --workspace-mount ]]; then workspace=$2; else old_name=$2; fi
+      shift 2 ;;
+    --help|-h) usage; exit 0 ;;
+    *) usage; exit 2 ;;
+  esac
+done
+[[ "$workspace" == /* && -d "$workspace" && "$old_name" != sbx-demo ]] || { usage; exit 2; }
+
+# Resolves paths through the common workspace mounted into both sandboxes.
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+workspace=$(cd -- "$workspace" && pwd -P)
+case "$script_dir" in
+  "$workspace"/*) relative=${script_dir#"$workspace"/} ;;
+  *) printf 'The dotfiles directory must be inside the workspace mount.\n' >&2; exit 1 ;;
+esac
+mounted="$workspace/$relative"
+archive_dir="$script_dir/staging"
+image_tag="sbx-demo:$(date -u +%Y%m%d%H%M%S)"
+archive="$archive_dir/template.tar"
+
+# Saves the image as a local template before creating the sandbox.
+mkdir -p -- "$archive_dir"
+docker build -t "$image_tag" -f "$script_dir/Dockerfile" "$script_dir"
+docker save -o "$archive" "$image_tag"
+sbx template load "$archive"
+
+# Exports OMP state before creating the new sandbox, when requested.
+if [[ -n "$old_name" ]]; then
+  sbx exec "$old_name" bash "$mounted/copy-state.sh" export
+fi
+sbx create --name sbx-demo -t "$image_tag" shell "$workspace"
+if [[ -n "$old_name" ]]; then
+  sbx exec sbx-demo bash "$mounted/copy-state.sh" import
+fi
+
+# Changes the bootstrap copies into links and checks the installed tools.
+sbx exec sbx-demo bash "$mounted/home/.local/bin/link-tracked-home" "$mounted/home"
+sbx exec sbx-demo node --version
+sbx exec sbx-demo bun --version
+sbx exec sbx-demo omp --version
+printf 'Created sbx-demo. Template archive: %s\n' "$archive"

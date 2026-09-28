@@ -1,0 +1,7 @@
+setupVersion: 2
+modelRoles:
+  default: openai-codex/gpt-6-sol:medium
+  task: openai-codex/gpt-6-sol:medium
+  smol: openai-codex/gpt-6-luna:medium
+skills:
+  enableSkillCommands: true

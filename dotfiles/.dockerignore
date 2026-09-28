@@ -1,0 +1,3 @@
+# Keep copied credentials and saved images out of the Docker build context.
+staging/
+.git/
