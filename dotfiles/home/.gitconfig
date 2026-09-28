@@ -1,2 +1,8 @@
+[credential]
+	helper = store
+	useHttpPath = true
+[core]
+	checkStat = minimal
+	excludesFile = ~/.gitignore_global
 [user]
 	useConfigOnly = true

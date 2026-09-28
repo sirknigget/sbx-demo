@@ -1,9 +1,10 @@
 # Sets a small interactive shell environment for the demo sandbox.
 # Uses the sandbox environment when it is available.
 
-# Restore the sandbox environment for interactive shells when provided by sbx.
+# Restore the sandbox environment for interactive and child Bash shells.
 if [ -f /etc/sandbox-persistent.sh ]; then
     . /etc/sandbox-persistent.sh
+    export BASH_ENV=/etc/sandbox-persistent.sh
 fi
 
 case ":$PATH:" in
@@ -16,3 +17,5 @@ case ":$PATH:" in
 esac
 
 PS1='\u@\h:\W\$ '
+HISTTIMEFORMAT='%Y-%m-%d %H:%M:%S '
+export HISTTIMEFORMAT

@@ -1,24 +1,115 @@
 #!/usr/bin/env bash
 
-# Shows or clears only npm and Bun download caches in the sandbox home.
-# Does not remove project dependencies, OMP data, or Docker resources.
-# Requires --confirm before it removes files.
+# Clears the npm and npx caches managed by the source sandbox command.
+# Keeps installed tools, Bun data, OMP state, and Docker resources intact.
 set -euo pipefail
 
-# Selects preview or removal without changing unrelated paths.
-case "${1:---dry-run}" in
-  --dry-run) [[ $# -eq 0 || $# -eq 1 ]] || exit 2; action=preview ;;
-  --confirm) [[ $# -eq 1 ]] || exit 2; action=remove ;;
-  *) printf 'Usage: clear_caches [--dry-run|--confirm]\n' >&2; exit 2 ;;
-esac
+dry_run=false
+confirm=false
+total_bytes=0
 
-# Applies the selected action to known package download caches.
-for path in "$HOME/.npm/_cacache" "$HOME/.bun/install/cache"; do
-  [[ -d "$path" ]] || continue
-  if [[ "$action" == preview ]]; then
-    du -sh -- "$path"
-  else
-    rm -rf -- "$path"
-    printf 'removed %s\n' "$path"
+# Prints the accepted flags.
+usage() {
+  printf 'Usage: clear_caches [--dry-run] [--confirm]\n'
+}
+
+# Reads flags and rejects unknown options before cache inspection.
+parse_args() {
+  while (($# > 0)); do
+    case "$1" in
+    --dry-run) dry_run=true ;;
+    --confirm) confirm=true ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Unknown option: %s\n' "$1" >&2
+      usage >&2
+      exit 1
+      ;;
+    esac
+    shift
+  done
+}
+
+# Displays the current npm and npx cache sizes.
+show_cache_sizes() {
+  if $dry_run; then
+    echo "[dry-run] No files will be deleted."
   fi
-done
+  echo ""
+  echo "=== Cache sizes before cleanup ==="
+  for path in "$HOME/.npm/_cacache" "$HOME/.npm/_npx"; do
+    if [[ -e "$path" ]]; then du -sh "$path" 2>/dev/null; fi
+  done
+  echo ""
+}
+
+# Asks for consent unless a flag makes the cleanup noninteractive.
+confirm_cleanup() {
+  if ! $dry_run && ! $confirm; then
+    read -r -p "Proceed with clearing caches? [y/N] " answer
+    if [[ "${answer,,}" != y ]]; then
+      echo "Aborted."
+      exit 0
+    fi
+    echo ""
+  fi
+}
+
+# Uses npm to clear its cache, or shows its size during a dry run.
+clear_npm_cache() {
+  if [[ -d "$HOME/.npm/_cacache" ]]; then
+    local size size_bytes
+    size=$(du -sh "$HOME/.npm/_cacache" 2>/dev/null | cut -f1)
+    if $dry_run; then
+      size_bytes=$(du -s --block-size=1 "$HOME/.npm/_cacache" 2>/dev/null | cut -f1)
+      echo "  would remove  npm cache (~/.npm/_cacache, $size)"
+      total_bytes=$((total_bytes + size_bytes))
+    else
+      npm cache clean --force 2>/dev/null && echo "  removed  npm cache (~/.npm/_cacache)"
+    fi
+  fi
+}
+
+# Removes the npx cache directly, or shows its size during a dry run.
+clear_npx_cache() {
+  if [[ -e "$HOME/.npm/_npx" ]]; then
+    local size size_bytes
+    size=$(du -sh "$HOME/.npm/_npx" 2>/dev/null | cut -f1)
+    if $dry_run; then
+      size_bytes=$(du -s --block-size=1 "$HOME/.npm/_npx" 2>/dev/null | cut -f1)
+      echo "  would remove  npx cache (~/.npm/_npx, $size)"
+      total_bytes=$((total_bytes + size_bytes))
+    else
+      rm -rf "$HOME/.npm/_npx"
+      echo "  removed  npx cache (~/.npm/_npx, $size freed)"
+    fi
+  fi
+}
+
+# Displays the estimated freed space or the remaining cache usage.
+show_result() {
+  echo ""
+  echo "=== Done ==="
+  if $dry_run; then
+    echo "Estimated total freed: $(numfmt --to=iec-i --suffix=B "$total_bytes")"
+  else
+    echo "Remaining cache usage:"
+    du -sh "$HOME/.npm" 2>/dev/null || true
+  fi
+}
+
+# Runs cache inspection, consent, and cleanup in the original order.
+main() {
+  parse_args "$@"
+  show_cache_sizes
+  confirm_cleanup
+  echo "=== Clearing caches ==="
+  clear_npm_cache
+  clear_npx_cache
+  show_result
+}
+
+main "$@"

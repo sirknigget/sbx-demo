@@ -1,8 +1,12 @@
 # Docker sandbox dotfiles demo
 
-This demo creates a Docker sandbox named `sbx-demo`. It installs OMP, Node.js, and Bun, then links its Bash, Git, and OMP settings to this checkout. A shared workspace mount lets you use the same sandbox for other projects.
+This demo creates a Docker sandbox named `sbx-demo`. It installs OMP, Node.js, and Bun, then links its Bash, Git, and OMP settings to this checkout.
+A shared workspace mount lets you use the same sandbox for other projects.
 
 Run the setup commands **on your host**, not inside a sandbox. The example image uses Linux ARM64, and the `dev-demo` host command needs Zsh.
+
+This setup was only tested on MacOS with Apple Silicon. It may work on Linux, but it was not tested there.
+If you wish to adapt it for your own system - ask your agent to help you.
 
 ## 1. Prepare a workspace
 
@@ -10,18 +14,22 @@ You need Docker, `sbx`, and a checkout of `sbx-demo` on your host. A useful layo
 
 ```text
 workspace/
-  sbx-demo/
+  sbx-demo/ (this repository)
     dotfiles/
   another-project/
 ```
 
-The layout is a recommendation. Choose **one absolute directory** to mount. It must contain this `sbx-demo` checkout and can contain other project checkouts. The example below selects `$HOME/workspace`; change it to the directory you chose:
+The layout is a recommendation. Choose **one absolute directory** to mount.
+It must contain this `sbx-demo` checkout and can contain other project checkouts.
+The example below selects `$HOME/workspace`; change it to the directory you chose:
 
 ```bash
 export SBX_DEMO_WORKSPACE="$HOME/workspace"
 ```
 
-Keep this value in the host shell where you run the next steps. `dev-demo` also needs it each time you open a new host shell. You can add the export to your host shell startup file if you want it to persist.
+Keep this value in the host shell where you run the next steps.
+`dev-demo` also needs it each time you open a new host shell.
+You can add the export to your host shell startup file if you want it to persist.
 
 ## 2. Create the sandbox
 
@@ -32,17 +40,17 @@ cd "$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles"
 bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE"
 ```
 
-The script builds an image, loads it into `sbx`, creates `sbx-demo`, links the tracked settings, and checks the installed tools. It will not replace a sandbox already named `sbx-demo`.
+The script builds an image, saves a timestamped template backup under `$HOME/agent-sandbox-backup/`, loads it into `sbx`, creates `sbx-demo` with VirtioFS cache disabled, links the tracked settings, and checks the installed tools. It will not replace a sandbox already named `sbx-demo`.
 
 ## Optional: move OMP data from an old sandbox
 
-Stop OMP in the old sandbox before moving its data. When you create `sbx-demo` in step 2, add `--old-name` with the name of that sandbox:
+When you create `sbx-demo` in step 2, add `--old-name` with the name of the old sandbox. OMP can keep running there during export; SQLite makes a consistent snapshot:
 
 ```bash
 bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE" --old-name OLD_SANDBOX
 ```
 
-The script exports the old OMP database and optional private `.env` file, then imports them into the new sandbox. Do not use an existing `sbx-demo` as the old sandbox. Private data and the saved image remain under `dotfiles/staging/`. This directory is ignored by Git and excluded from image builds. Review and remove its contents when you no longer need them.
+The script exports the old OMP database and optional private `.env` file, then imports them into the new sandbox. OMP must not be running in the destination during import; the script checks this. Do not use an existing `sbx-demo` as the old sandbox. Copied OMP data remains under `dotfiles/staging/`, which Git ignores and Docker excludes from image builds. Review and remove this private data when you no longer need it. The template backup stays separately under `$HOME/agent-sandbox-backup/`.
 
 ## 3. Make `dev-demo` available on the host
 
@@ -70,4 +78,4 @@ OMP may ask you to sign in. No credentials are included in this checkout. To wor
 - `Dockerfile` installs tools and copies the tracked `home/` files for first boot.
 - `home/` holds the Bash and Git dotfiles, OMP config, four example skills, three example agents, and commands. After setup, these files link to the mounted checkout: edits to them become available without another image build. OMP's live database stays outside the links.
 - `copy-state.sh` and `omp-db-copy.py` move only private OMP data. No Claude or MCP setup is included.
-- In the sandbox, `clear_caches` and `clear_docker` show a preview by default. Pass `--confirm` only when you intend to remove caches or unused Docker resources.
+- In the sandbox, `clear_caches --dry-run` previews npm and npx cache cleanup. `clear_docker --dry-run` previews Docker container and image cleanup. Without flags, each command asks before removing data. `--confirm` skips the first prompt; only an interactive `clear_docker` run can also offer separate build-cache and volume cleanup. Bun's cache is not cleared.

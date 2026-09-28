@@ -1,58 +1,122 @@
 #!/usr/bin/env bash
 
-# Builds the demo template on the host and creates the sbx-demo sandbox.
-# Optionally moves OMP state from an existing sandbox through the workspace.
-# Links tracked home files after the new sandbox mounts that workspace.
+# Builds a demo template on the host and saves a timestamped backup.
+# Optionally transfers OMP data from an existing sandbox before linking home.
+# Creates sbx-demo with the selected shared workspace mounted without VirtioFS cache.
 set -euo pipefail
 
-# Reads the host workspace mount and the optional source sandbox name.
-usage() {
-  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n' >&2
+# Reports missing inputs and failed prerequisites before the build starts.
+die() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
 }
-workspace=''
-old_name=''
-while (($#)); do
-  case "$1" in
-    --workspace-mount|--old-name)
-      (($# >= 2)) && [[ -n "$2" ]] || { usage; exit 2; }
+
+# Lists the two supported inputs to this host command.
+usage() {
+  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n'
+}
+
+# Checks the sandbox names through sbx rather than probing the Docker daemon.
+sandbox_exists() {
+  sbx ls --quiet | grep -Fxq "$1"
+}
+
+# Runs a mounted script in the sandbox login environment.
+# Expands the positional arguments inside the sandbox.
+run_copy_state() {
+  local sandbox_name=$1 mode=$2
+  sbx exec "$sandbox_name" bash -lc "\"\$1\" \"\$2\"" bash "$mounted/copy-state.sh" "$mode"
+}
+
+# Reads an explicit shared mount path and an optional old sandbox name.
+parse_args() {
+  workspace=''
+  old_name=''
+  while (($#)); do
+    case "$1" in
+    --workspace-mount | --old-name)
+      (($# >= 2)) && [[ -n "$2" ]] || die "$1 requires a value"
       if [[ "$1" == --workspace-mount ]]; then workspace=$2; else old_name=$2; fi
-      shift 2 ;;
-    --help|-h) usage; exit 0 ;;
-    *) usage; exit 2 ;;
-  esac
-done
-[[ "$workspace" == /* && -d "$workspace" && "$old_name" != sbx-demo ]] || { usage; exit 2; }
+      shift 2
+      ;;
+    --help | -h)
+      usage
+      exit 0
+      ;;
+    *) die "unknown option: $1" ;;
+    esac
+  done
+}
 
-# Resolves paths through the common workspace mounted into both sandboxes.
-script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-workspace=$(cd -- "$workspace" && pwd -P)
-case "$script_dir" in
+# Checks the mount, required tools, and sandbox names before building.
+check_inputs() {
+  [[ "$workspace" == /* ]] || die '--workspace-mount must be an absolute directory'
+  [[ -d "$workspace" ]] || die "workspace directory not found: $workspace"
+  [[ "$old_name" != sbx-demo ]] || die 'old and new sandbox names must differ'
+  local command
+  for command in docker sbx; do
+    command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
+  done
+}
+
+# Resolves the demo paths inside the same mounted workspace on both sides.
+resolve_mount() {
+  local relative
+  script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+  workspace=$(cd -- "$workspace" && pwd -P)
+  case "$script_dir" in
   "$workspace"/*) relative=${script_dir#"$workspace"/} ;;
-  *) printf 'The dotfiles directory must be inside the workspace mount.\n' >&2; exit 1 ;;
-esac
-mounted="$workspace/$relative"
-archive_dir="$script_dir/staging"
-image_tag="sbx-demo:$(date -u +%Y%m%d%H%M%S)"
-archive="$archive_dir/template.tar"
+  *) die "dotfiles directory is not inside workspace mount: $workspace" ;;
+  esac
+  mounted="$workspace/$relative"
+  [[ -f "$script_dir/Dockerfile" && -f "$script_dir/copy-state.sh" && -d "$script_dir/home" ]] || die 'demo files are missing'
+}
 
-# Saves the image as a local template before creating the sandbox.
-mkdir -p -- "$archive_dir"
-docker build -t "$image_tag" -f "$script_dir/Dockerfile" "$script_dir"
-docker save -o "$archive" "$image_tag"
-sbx template load "$archive"
+# Checks that the new name is free and the optional old name exists.
+check_sandbox_names() {
+  if sandbox_exists sbx-demo; then die 'sandbox already exists: sbx-demo'; fi
+  if [[ -n "$old_name" ]] && ! sandbox_exists "$old_name"; then die "old sandbox not found: $old_name"; fi
+}
 
-# Exports OMP state before creating the new sandbox, when requested.
-if [[ -n "$old_name" ]]; then
-  sbx exec "$old_name" bash "$mounted/copy-state.sh" export
-fi
-sbx create --name sbx-demo -t "$image_tag" shell "$workspace"
-if [[ -n "$old_name" ]]; then
-  sbx exec sbx-demo bash "$mounted/copy-state.sh" import
-fi
+# Saves each built template outside the checkout, as in the source migration flow.
+build_template() {
+  local timestamp backup_dir
+  timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
+  image_tag="sbx-demo:local-$timestamp"
+  backup_dir="$HOME/agent-sandbox-backup"
+  archive="$backup_dir/sbx-demo__local_$timestamp.tar"
+  mkdir -p -- "$backup_dir"
+  docker build -t "$image_tag" -f "$script_dir/Dockerfile" "$script_dir"
+  docker save -o "$archive" "$image_tag"
+  sbx template load "$archive"
+}
 
-# Changes the bootstrap copies into links and checks the installed tools.
-sbx exec sbx-demo bash "$mounted/home/.local/bin/link-tracked-home" "$mounted/home"
-sbx exec sbx-demo node --version
-sbx exec sbx-demo bun --version
-sbx exec sbx-demo omp --version
-printf 'Created sbx-demo. Template archive: %s\n' "$archive"
+# Transfers only the OMP data supported by this demo.
+create_and_transfer() {
+  if [[ -n "$old_name" ]]; then
+    sbx exec "$old_name" bash -lc "test -f \"\$1\"" bash "$mounted/copy-state.sh"
+    run_copy_state "$old_name" export
+  fi
+  env DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo -t "$image_tag" shell "$workspace"
+  sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
+  if [[ -n "$old_name" ]]; then run_copy_state sbx-demo import; fi
+}
+
+# Relinks tracked files and checks only tools installed by this example image.
+link_and_report() {
+  sbx exec sbx-demo bash -lc "bash ~/.local/bin/link-tracked-home \"\$1\"" bash "$mounted/home"
+  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version'
+  printf '\nDone.\n- New sandbox: sbx-demo\n- Template tag: %s\n- Template backup: %s\n- Workspace mount: %s\n- State migration: %s\n' "$image_tag" "$archive" "$workspace" "${old_name:-skipped}"
+  if [[ -n "$old_name" ]]; then
+    printf 'Private OMP data may remain in %s/staging/. Review and remove it after the transfer.\n' "$script_dir"
+  fi
+}
+
+# Runs the host flow only after the input checks pass.
+parse_args "$@"
+check_inputs
+resolve_mount
+check_sandbox_names
+build_template
+create_and_transfer
+link_and_report

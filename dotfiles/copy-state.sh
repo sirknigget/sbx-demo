@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
 
-# Moves only OMP's database and optional private environment through staging/.
-# Runs inside old and new sandboxes while they share the mounted workspace.
-# Keeps credentials and runtime data out of Git and out of the Docker image.
+# Transfers only OMP database and private environment data between sandboxes.
+# Keeps copied state under the shared, ignored staging directory.
+# Uses a consistent SQLite snapshot instead of copying a live database file.
 set -euo pipefail
 
-# Resolves the mounted dotfiles directory, independent of the current directory.
+# Uses paths inside the mounted demo checkout and the current sandbox home.
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-staging="$script_dir/staging/omp"
+staging="$script_dir/staging/files/.omp"
+source_db="$HOME/.omp/agent/agent.db"
+staged_db="$staging/agent/agent.db"
 mode=${1:-}
 if [[ $# -ne 1 || "$mode" != export && "$mode" != import ]]; then
   printf 'Usage: copy-state.sh export|import\n' >&2
   exit 2
 fi
 
-# Transfers a private environment file only when one exists.
+# Copies the optional private environment with owner-only permissions.
 copy_env() {
   local source=$1 destination=$2
   [[ -f "$source" ]] || return 0
@@ -23,22 +25,34 @@ copy_env() {
   printf 'copied OMP environment\n'
 }
 
-# Uses SQLite backup for the database and checks the destination is not in use.
+# Requires a stopped destination database before any import changes.
+preflight_import() {
+  [[ -f "$staged_db" ]] || return 0
+  command -v lsof >/dev/null 2>&1 || {
+    printf 'Error: lsof is required before importing an OMP database.\n' >&2
+    return 1
+  }
+  local open_pids
+  open_pids=$(lsof -t "$source_db" "$source_db-wal" "$source_db-shm" 2>/dev/null || true)
+  if [[ -n "$open_pids" ]]; then
+    printf 'Error: Stop OMP before importing its database.\n' >&2
+    return 1
+  fi
+}
+
+# Removes stale staged OMP files before taking a new snapshot.
 if [[ "$mode" == export ]]; then
-  mkdir -p -m 700 -- "$staging"
-  rm -f -- "$staging/agent.db" "$staging/.env"
-  if [[ -f "$HOME/.omp/agent/agent.db" ]]; then
-    python3 "$script_dir/omp-db-copy.py" "$HOME/.omp/agent/agent.db" "$staging/agent.db"
+  install -d -m 700 -- "$script_dir/staging/files" "$staging" "$staging/agent"
+  rm -f -- "$staged_db" "$staging/.env"
+  if [[ -f "$source_db" ]]; then
+    python3 "$script_dir/omp-db-copy.py" export "$source_db" "$staged_db"
     printf 'exported OMP database\n'
   fi
   copy_env "$HOME/.omp/.env" "$staging/.env"
 else
-  if [[ -f "$staging/agent.db" ]]; then
-    if lsof -t "$HOME/.omp/agent/agent.db" "$HOME/.omp/agent/agent.db-wal" "$HOME/.omp/agent/agent.db-shm" >/dev/null 2>&1; then
-      printf 'Stop OMP before importing its database.\n' >&2
-      exit 1
-    fi
-    python3 "$script_dir/omp-db-copy.py" "$staging/agent.db" "$HOME/.omp/agent/agent.db"
+  preflight_import
+  if [[ -f "$staged_db" ]]; then
+    python3 "$script_dir/omp-db-copy.py" import "$staged_db" "$source_db"
     printf 'imported OMP database\n'
   fi
   copy_env "$staging/.env" "$HOME/.omp/.env"

@@ -1,7 +1,125 @@
+symbolPreset: unicode
 setupVersion: 2
 modelRoles:
-  default: openai-codex/gpt-6-sol:medium
-  task: openai-codex/gpt-6-sol:medium
   smol: openai-codex/gpt-6-luna:medium
+  slow: openai-codex/gpt-6-sol:high
+  plan: openai-codex/gpt-6-sol:high
+  commit: openai-codex/gpt-6-luna:medium
+  tiny: openai-codex/gpt-6-luna:medium
+  task: openai-codex/gpt-6-sol:high
+  default: openai-codex/gpt-6-sol:medium
+goal:
+  enabled: true
+task:
+  eager: default
+  maxRecursionDepth: 3
+  softRequestBudget: 0
+  isolation:
+    merge: patch
+    commits: ai
+    enabled: false
+  showResolvedModelBadge: true
+  agentModelOverrides:
+    task: openai-codex/gpt-6-sol:medium
+  maxEffort: high
 skills:
   enableSkillCommands: true
+astGrep:
+  enabled: true
+tools:
+  artifactSpillThreshold: 10
+  artifactTailBytes: 5
+  artifactHeadBytes: 5
+  outputMaxColumns: 0
+  artifactTailLines: 1000
+  maxTimeout: 600
+ttsr:
+  contextMode: discard
+  interruptMode: always
+  repeatMode: after-gap
+  repeatGap: 1
+  builtinRules: false
+shellMinimizer:
+  sourceOutlineLevel: default
+lsp:
+  lazy: false
+  enabled: false
+  shared: false
+  diagnosticsOnWrite: false
+compaction:
+  handoffSaveToDisk: false
+  thresholdTokens: -1
+  remoteStreamingV2Enabled: false
+  thresholdPercent: 40
+  methodOrder:
+    - remote
+    - soft
+    - handoff
+  experimentalContextManagement: false
+steeringMode: all
+followUpMode: all
+interruptMode: wait
+loop:
+  mode: prompt
+doubleEscapeAction: tree
+paste:
+  largeMenuThreshold: 0
+recap:
+  enabled: false
+startup:
+  quiet: true
+  checkUpdate: true
+marketplace:
+  autoUpdate: notify
+power:
+  sleepPrevention: idle
+proseOnlyThinking: false
+personality: friendly
+statusLine:
+  preset: ascii
+  separator: none
+  transparent: false
+  compactThinkingLevel: false
+  showHookStatus: true
+  contextLine: embedded
+tui:
+  tight: true
+  titleState: true
+  titleSpinner: braille
+  resizeScrollback: rebuild
+display:
+  cacheMissMarker: true
+  collapseCompacted: true
+  shimmer: classic
+  smoothStreaming: false
+  hideToolActivity: false
+showHardwareCursor: false
+eval:
+  js: false
+  py: true
+magicKeywords:
+  orchestrate: false
+  ultrathink: false
+model:
+  toolCallLoopGuard:
+    enabled: false
+  loopGuard:
+    toolCallReminder: false
+    enabled: false
+    checkAssistantContent: false
+hideThinkingBlock: false
+isolation:
+  backend: auto
+composer:
+  shape: band
+retry:
+  modelFallback: false
+read:
+  defaultLimit: 500
+bash:
+  allowCompoundCommands: true
+extendedContext: true
+codexResets:
+  autoRedeem: "no"
+enabledModels:
+  - openai-codex/*

@@ -33,9 +33,9 @@ Spawn a new Codex sandbox from a template, mounted in this workspace: _(You can 
 
 `sbx run codex`
 
-Spawn a new Codex sandbox from a template, mounted in this workspace, with a custom name and with port 3000 exposed to the host:
+Create a named Codex sandbox with port 3000 exposed to the host, then start Bash inside it to update and launch Codex:
 
-`sbx run --name my-codex --publish 3000:3000/tcp4 codex`
+`sbx create --name my-codex --publish 3000:3000/tcp4 codex . && sbx exec -it my-codex bash -lc 'codex update && exec codex'`
 
 
 _(First creation of a Codex sandbox will download image and prompt for Codex login)_
