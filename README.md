@@ -35,12 +35,10 @@ Spawn a new Codex sandbox from a template, mounted in this workspace: _(You can 
 
 Create a named Codex sandbox with port 3000 exposed to the host, then start Bash inside it to update and launch Codex:
 
-`sbx create --name my-codex --publish 3000:3000/tcp4 codex . && sbx exec -it my-codex bash -lc 'codex update && exec codex'`
+`sbx create --name my-codex --publish 3000:3000 codex . && sbx exec -it my-codex bash -lc 'codex update && exec codex'`
 
 
 _(First creation of a Codex sandbox will download image and prompt for Codex login)_
-
-
 
 
 SBX interactive control plane:
@@ -54,6 +52,10 @@ List all sandboxes:
 Execute a command in a running sandbox - in this example running interactive bash:
 
 `sbx exec -it my-codex bash`
+
+Connect to a sandbox from Codex or Claude Code desktop, via SSH:
+
+ssh://agent@my-codex.sbx
 
 ### Example fully autonomous tasks to try (will touch system files, install tools and run Docker with no restrictions):
 
@@ -74,11 +76,31 @@ The documentation for TypeSafe API is available at https://github.com/typesafe-a
 --------
 
 ```
-Create a colorful 'Hello World' react app published on port 3000, served from inside a docker. 
-For validation, you must install Playwright CLI globally, create an E2E test that creates a screenshot snapshot, 
+Create a web-based file browser, docker browser, and Codex task dispatcher.
+The backend is in Node.js and Express, and the frontend is in React.
+The app has a sidebar with three sections: File Browser, Docker Browser, and Codex Task Dispatcher:
+- allow users to browse the file heirarchy in this machine (read-only, no file display)
+- allow viewing Docker containers and their logs.
+- allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time.
+
+The app backend should be served on port 3000, frontend on port 3001, and both kept open when this task is done.
+
+Install Playwright CLI globally on this machine, and use it for screenshot verification of the app's UI.
+Create a deterministic frontend E2E test with mock data for the three sections, and for keep a git versioned screenshot snapshot of each section's UI for validation.
+
+Create a GitHub PR with the implementation and the E2E test including the versioned screenshot snapshot.
+```
+
+
+--------
+
+```
+Create a colorful one-page react app published on port 3000, served from inside a docker.
+The theme of the app is "Agentic Engineering: stop with the slop". 
+For validation, you must install Playwright CLI globally on this machine, create an E2E test that creates a screenshot snapshot, 
 and verify that the snapshot is created and matches the expected output. 
 The app should be fully functional and accessible on a docker on port 3000 on task completion. 
-Create a PR with the implementation and the E2E test including the versioned screenshot snapshot.
+Create a PR on GitHub with the implementation and the E2E test including the versioned screenshot snapshot.
 ```
 
 
