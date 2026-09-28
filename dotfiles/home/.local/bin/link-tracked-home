@@ -6,7 +6,7 @@
 set -euo pipefail
 usage() {
   cat <<'EOF'
-Usage: link-tracked-home [--dry-run] /path/to/sandbox/sbx-shell-docker/home
+Usage: link-tracked-home [--dry-run] /path/to/dotfiles/home
 
 Replace tracked files in $HOME with symlinks to the mounted repo copy.
 EOF
@@ -62,11 +62,6 @@ fi
 SOURCE_DIR="$(readlink -f "$SOURCE_DIR")"
 if [[ ! -d "$SOURCE_DIR" ]]; then
   echo "Error: source directory not found: $SOURCE_DIR" >&2
-  exit 1
-fi
-
-if [[ ! -f "$SOURCE_DIR/.claude/settings.json" ]]; then
-  echo "Error: source directory does not look like sbx-shell-docker/home: $SOURCE_DIR" >&2
   exit 1
 fi
 
