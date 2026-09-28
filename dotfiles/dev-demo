@@ -52,6 +52,12 @@ else
 fi
 
 if [[ "$command" == bash ]]; then
-  exec sbx run --name sbx-demo -- -c 'cd -- "$1" && exec bash -i' sh "$relative_dir"
+  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
 fi
-exec sbx run --name sbx-demo -- -c 'cd -- "$1" && exec omp' sh "$relative_dir"
+exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
+  [[ "${SBX_CRED_OPENAI_MODE:-}" == oauth && -n "${OPENAI_CODEX_OAUTH_TOKEN:-}" ]] || {
+    printf "Error: This sandbox needs the host-managed OpenAI OAuth setup. Run regenerate_sandbox after sbx secret set openai --oauth.\n" >&2
+    exit 1
+  }
+  exec omp --provider openai-codex --api-key "$OPENAI_CODEX_OAUTH_TOKEN"
+'

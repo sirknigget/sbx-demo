@@ -7,6 +7,11 @@ if [ -f /etc/sandbox-persistent.sh ]; then
     export BASH_ENV=/etc/sandbox-persistent.sh
 fi
 
+# Docker substitutes this placeholder with the host's stored ChatGPT login.
+if [ "${SBX_CRED_OPENAI_MODE:-}" = oauth ]; then
+    export OPENAI_CODEX_OAUTH_TOKEN=oai-oat01-proxy-managed
+fi
+
 case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;
     *) export PATH="$HOME/.local/bin:$PATH" ;;

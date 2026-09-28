@@ -11,7 +11,7 @@ die() {
   exit 1
 }
 
-# Lists the two supported inputs to this host command.
+# Lists the supported inputs to this host command.
 usage() {
   printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n'
 }
@@ -97,7 +97,9 @@ create_and_transfer() {
     sbx exec "$old_name" bash -lc "test -f \"\$1\"" bash "$mounted/copy-state.sh"
     run_copy_state "$old_name" export
   fi
-  env DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo -t "$image_tag" shell "$workspace"
+  # Codex selects host-managed OAuth; the template supplies OMP and Bash.
+  # Repo-owned skills must not overlap Docker's shared skills mount.
+  env DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo --skills off --pull never -t "$image_tag" codex "$workspace"
   sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
   if [[ -n "$old_name" ]]; then run_copy_state sbx-demo import; fi
 }
@@ -106,6 +108,17 @@ create_and_transfer() {
 link_and_report() {
   sbx exec sbx-demo bash -lc "bash ~/.local/bin/link-tracked-home \"\$1\"" bash "$mounted/home"
   sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version'
+  # Exercise the same managed credential used by dev-demo, without tool access.
+  sbx exec sbx-demo bash -lc '
+    [[ "${SBX_CRED_OPENAI_MODE:-}" == oauth ]] || {
+      printf "Error: Store the host login with sbx secret set openai --oauth, then recreate the sandbox.\n" >&2
+      exit 1
+    }
+    omp --provider openai-codex --api-key "$OPENAI_CODEX_OAUTH_TOKEN" \
+      --model openai-codex/gpt-6-luna --thinking minimal \
+      --no-tools --no-session --no-extensions --no-skills --no-title \
+      --max-time 60s -p "Reply with exactly SBX_CODEX_AUTH_OK."
+  '
   printf '\nDone.\n- New sandbox: sbx-demo\n- Template tag: %s\n- Template backup: %s\n- Workspace mount: %s\n- State migration: %s\n' "$image_tag" "$archive" "$workspace" "${old_name:-skipped}"
   if [[ -n "$old_name" ]]; then
     printf 'Private OMP data may remain in %s/staging/. Review and remove it after the transfer.\n' "$script_dir"
