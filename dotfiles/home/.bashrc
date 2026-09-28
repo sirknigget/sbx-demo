@@ -11,6 +11,10 @@ fi
 if [ "${SBX_CRED_OPENAI_MODE:-}" = oauth ]; then
     export OPENAI_CODEX_OAUTH_TOKEN=oai-oat01-proxy-managed
 fi
+case "${SBX_CRED_ANTHROPIC_MODE:-none}" in
+    oauth) export ANTHROPIC_OAUTH_TOKEN=sk-ant-oat01-proxy-managed ;;
+    apikey) export ANTHROPIC_API_KEY=proxy-managed ;;
+esac
 
 case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;

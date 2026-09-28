@@ -1,81 +1,217 @@
-# Docker sandbox dotfiles demo
+# Your development sandbox
 
-This demo creates a Docker sandbox named `sbx-demo`. It installs OMP, Node.js, and Bun, then links its Bash, Git, and OMP settings to this checkout.
-A shared workspace mount lets you use the same sandbox for other projects.
+This demo creates a sandbox named `sbx-demo`: a separate Linux environment with **OMP (Oh My Pi), Codex, Claude Code, Node.js, Bun, Git, and Docker** ready to use. You can work on this repository or any other project in your shared workspace.
 
-Run the setup commands **on your host**, not inside a sandbox. The example image uses Linux ARM64, and the `dev-demo` host command needs Zsh.
+Your project files stay on your computer and are shared with the sandbox. Edits inside the sandbox also change those files on your computer. The sandbox's Bash, Git, OMP settings, and skills link back to this repository, so you can keep your setup under version control.
 
-This setup was only tested on MacOS with Apple Silicon. It may work on Linux, but it was not tested there.
-If you wish to adapt it for your own system - ask your agent to help you.
+Setup uses Docker **kits v3**. The kit describes the environment and its optional provider credentials; the accompanying Dockerfile installs the tools. One setup command builds and connects everything.
 
-## 1. Prepare a workspace
+## Before you start
 
-You need Docker, `sbx`, and a checkout of `sbx-demo` on your host. A useful layout is:
+Run all setup and `dev-demo` commands in a terminal **on your computer**, not inside another sandbox.
+
+You need:
+
+- Docker installed and running, with Buildx available.
+- Docker Sandboxes (`sbx`) with kits v3 support. This flow was tested with `sbx` 0.46.0.
+- A local checkout of this repository.
+- Zsh for the `dev-demo` launcher.
+
+The image is built for Linux ARM64. This setup has been tested on **macOS with Apple Silicon**; other platforms have not been tested. See the [Docker Sandboxes documentation](https://docs.docker.com/ai/sandboxes/) for installation and platform support.
+
+Check your tools before continuing:
+
+```bash
+docker info
+docker buildx version
+sbx version
+```
+
+Provider credentials are optional. You can create the sandbox with OpenAI, Anthropic, both, or neither.
+
+## 1. Choose your shared workspace
+
+Choose an absolute directory that contains this repository and any other projects you want to use. For example:
 
 ```text
 workspace/
-  sbx-demo/ (this repository)
+  sbx-demo/
     dotfiles/
   another-project/
 ```
 
-The layout is a recommendation. Choose **one absolute directory** to mount.
-It must contain this `sbx-demo` checkout and can contain other project checkouts.
-The example below selects `$HOME/workspace`; change it to the directory you chose:
+Set the path in your host terminal. Change this example if your workspace lives elsewhere:
 
 ```bash
 export SBX_DEMO_WORKSPACE="$HOME/workspace"
 ```
 
-Keep this value in the host shell where you run the next steps.
-`dev-demo` also needs it each time you open a new host shell.
-You can add the export to your host shell startup file if you want it to persist.
+The examples below assume the checkout is named `sbx-demo`. Adjust that part of the paths if you gave it another name.
 
-## 2. Create the sandbox
+Keep `SBX_DEMO_WORKSPACE` set whenever you use the launcher. To avoid setting it in every new terminal, add the export to your host shell's startup file, such as `~/.zshrc`.
 
-Go to the `dotfiles/` directory in your checkout. For the example layout:
+## 2. Choose your provider credentials — optional
+
+Skip this step if you only want to explore the environment, or if your credentials are already stored in `sbx`.
+
+To see which credentials are stored, run:
+
+```bash
+sbx secret ls
+```
+
+### OpenAI: use your ChatGPT login
+
+Sign in on the host before creating the sandbox:
+
+```bash
+sbx secret set openai --oauth
+```
+
+Follow the sign-in instructions. If your OpenAI login is already stored, you do not need to sign in again. Both OMP and Codex will use it through Docker's host proxy.
+
+If you prefer an OpenAI API key, use `sbx secret set openai` and enter the key when prompted instead. API usage is billed separately from a ChatGPT subscription.
+
+### Anthropic: use an API key or Claude subscription
+
+For an Anthropic API key, store it before creating the sandbox:
+
+```bash
+sbx secret set anthropic
+```
+
+Enter the key at the prompt. If Docker already has an Anthropic OAuth login stored, the setup can reuse it too.
+
+For a new Claude subscription login, create the sandbox first, then open `dev-demo claude` and use `/login` inside Claude Code. This local `sbx` version does **not** support `sbx secret set anthropic --oauth`; see [Docker's Claude authentication instructions](https://docs.docker.com/ai/sandboxes/agents/claude-code/).
+
+A free Claude account does not include Claude Code subscription access. Supported routes include Pro/Max, an eligible team account, or Anthropic Console credentials. Console also supports signing in without creating an API key. See [Claude Code authentication](https://code.claude.com/docs/en/authentication) for account requirements.
+
+### What happens to your credentials?
+
+With the kit's managed credentials, real tokens stay on the host. The tools inside the sandbox use placeholders that Docker replaces when sending provider requests. Do not paste tokens into tracked files in this repository. See [Docker's credential guide](https://docs.docker.com/ai/sandboxes/configuration/credentials/) for details.
+
+OMP starts with OpenAI when it is available, otherwise Anthropic. When neither is configured, it opens with its own login flow. Codex and Claude Code each use their respective provider.
+
+For automatic provider selection, prepare your credentials before creation. If you add a previously absent provider later, a fresh setup picks up its mode and updates OMP's defaults; this guide does not automatically rebuild an existing sandbox.
+
+## 3. Create the sandbox
+
+From your host terminal:
 
 ```bash
 cd "$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles"
 bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE"
 ```
 
-The script builds an image, saves a timestamped template backup under `$HOME/agent-sandbox-backup/`, loads it into `sbx`, creates `sbx-demo` with VirtioFS cache disabled, links the tracked settings, and checks the installed tools. It will not replace a sandbox already named `sbx-demo`.
+The first build can take several minutes while it downloads tools. If Docker asks to approve the kit's credentials, review the displayed provider domains. Choose **Approve all** to allow this kit to use both declared providers; approval does not create a missing login or API key.
 
-## Optional: move OMP data from an old sandbox
+The setup:
 
-When you create `sbx-demo` in step 2, add `--old-name` with the name of the old sandbox. OMP can keep running there during export; SQLite makes a consistent snapshot:
+1. Builds the kit with its own Docker builder, leaving your selected host builder unchanged.
+2. Creates `sbx-demo` with your workspace mounted.
+3. Saves a fresh template backup under `~/agent-sandbox-backup/`.
+4. Links the repository's settings and skills into the sandbox. Docker's shared skill store is disabled; repo skills remain enabled.
+5. Checks installed tools and reports provider status.
+
+When OpenAI is configured, setup also makes a small OMP request. With OpenAI OAuth, it checks Codex with another small request. These use your provider allowance; API-key requests may incur usage charges. **Setup makes no paid Anthropic request.** A reported Claude login describes authentication, not whether your account has credits or model access.
+
+Look for `Done.` at the end. Missing provider credentials do not prevent creation. The script refuses to replace an existing sandbox named `sbx-demo`.
+
+## 4. Add the launcher to your host
+
+Make `dev-demo` available as a command:
+
+```bash
+mkdir -p "$HOME/.local/bin"
+ln -s "$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles/dev-demo" "$HOME/.local/bin/dev-demo"
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Add the `PATH` export to your host shell's startup file too, if that directory is not already on your path. If the link already exists, check where it points rather than overwriting it blindly.
+
+You can also run the launcher directly without installing the link:
+
+```bash
+"$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles/dev-demo" bash
+```
+
+## 5. Work on a project
+
+In your host terminal, go to any project inside the shared workspace:
+
+```bash
+cd "$SBX_DEMO_WORKSPACE/another-project"
+```
+
+Then choose what to open:
+
+| Host command | Opens inside `sbx-demo` |
+| --- | --- |
+| `dev-demo` or `dev-demo omp` | OMP |
+| `dev-demo codex` | Codex |
+| `dev-demo claude` | Claude Code |
+| `dev-demo bash` | An interactive Bash shell |
+
+Each command opens the same project directory inside the sandbox. You do not need a separate sandbox for every project. A stopped sandbox starts when you use the launcher.
+
+In the Bash shell, use your normal development commands. Type `exit` to leave it. To stop the sandbox while keeping its files, run this **on the host**:
+
+```bash
+sbx stop sbx-demo
+```
+
+## Optional: bring OMP data from another sandbox
+
+Use this option **instead of the creation command in step 3**, before `sbx-demo` exists:
 
 ```bash
 bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE" --old-name OLD_SANDBOX
 ```
 
-The script exports the old OMP database and optional private `.env` file, then imports them into the new sandbox. OMP must not be running in the destination during import; the script checks this. Do not use an existing `sbx-demo` as the old sandbox. Copied OMP data remains under `dotfiles/staging/`, which Git ignores and Docker excludes from image builds. Review and remove this private data when you no longer need it. The template backup stays separately under `$HOME/agent-sandbox-backup/`.
+Replace `OLD_SANDBOX` with the source sandbox's name. It must already have this workspace and the demo scripts accessible at the same paths. The source is left in place.
 
-## 3. Make `dev-demo` available on the host
+The transfer copies only OMP's `~/.omp/agent/agent.db` and optional `~/.omp/.env`. It does not copy the whole home directory, session files, Codex credentials, or Claude credentials. SQLite takes a consistent database snapshot, so OMP can keep running in the source. OMP must be stopped in the destination during import; the script checks this.
 
-Still in `dotfiles/`, link the launcher into your host's local command directory:
+Private copies remain in `dotfiles/staging/`. Git ignores this directory and Docker excludes it from builds. Review and remove the copied data after you finish. The template backup is saved before private OMP data is imported.
 
-```bash
-mkdir -p "$HOME/.local/bin" && ln -s "$(pwd -P)/dev-demo" "$HOME/.local/bin/dev-demo"
-```
+## Customize your environment
 
-Make sure `$HOME/.local/bin` is on your host `PATH`. If it is not, run `export PATH="$HOME/.local/bin:$PATH"` in this shell and add that line to your host shell startup file for later sessions.
+Edit files under `dotfiles/home/` on the host to change Bash, Git, OMP settings, or repo skills. Existing linked files become available in the sandbox without rebuilding; restart the relevant shell or tool if it caches its settings.
 
-## 4. Open a project in the sandbox
-
-From any directory inside the mount, run `dev-demo` to start OMP or `dev-demo bash` to open Bash. For example:
+After adding new files, open a sandbox shell from the dotfiles directory. On the host:
 
 ```bash
-cd "$SBX_DEMO_WORKSPACE/sbx-demo"
-dev-demo
+cd "$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles"
+dev-demo bash
 ```
 
-OMP may ask you to sign in. No credentials are included in this checkout. To work on another project, go to its directory inside the same mount and run `dev-demo` again. The launcher opens the matching directory inside the sandbox.
+Then, inside that sandbox shell:
 
-## What lives where
+```bash
+bash ~/.local/bin/link-tracked-home "$PWD/home"
+```
 
-- `Dockerfile` installs tools and copies the tracked `home/` files for first boot.
-- `home/` holds the Bash and Git dotfiles, OMP config, four example skills, three example agents, and commands. After setup, these files link to the mounted checkout: edits to them become available without another image build. OMP's live database stays outside the links.
-- `copy-state.sh` and `omp-db-copy.py` move only private OMP data. No Claude or MCP setup is included.
-- In the sandbox, `clear_caches --dry-run` previews npm and npx cache cleanup. `clear_docker --dry-run` previews Docker container and image cleanup. Without flags, each command asks before removing data. `--confirm` skips the first prompt; only an interactive `clear_docker` run can also offer separate build-cache and volume cleanup. Bun's cache is not cleared.
+Tool installs and pinned versions live in `Dockerfile`. Provider declarations live in `sbx-demo.yaml`. Changes to these require a fresh sandbox setup. The regeneration script deliberately leaves existing sandboxes alone; preserve any sandbox-only data before choosing to remove and recreate one.
+
+## Common questions
+
+**“Sandbox already exists: sbx-demo.”** Setup creates a new sandbox rather than updating one. Use `dev-demo` to open the existing environment. For a deliberate rebuild, first preserve anything you need from its home directory; files in the shared workspace remain on the host.
+
+**“Set SBX_DEMO_WORKSPACE…” or “Current directory is not inside…”** Set the variable to the directory used at creation, then move to a project inside it. The launcher needs both the workspace path and a matching current directory.
+
+**Codex says it is logged in with an API key, even though I used ChatGPT.** In managed OAuth mode, Codex sees a proxy placeholder and labels it as an API key. Docker supplies the real host OAuth login for requests. The setup's successful Codex response is the useful check.
+
+**Claude reports `loggedIn: false`.** This is expected when no Anthropic credential is available. Use an eligible account or API key; leaving Anthropic unconfigured does not prevent OpenAI tools from working.
+
+**An OpenAI check fails after the sandbox was created.** The sandbox may already exist even though setup did not reach `Done.`. Check the stored login and the provider error before retrying; a rerun will not overwrite the sandbox.
+
+## Clean up caches inside the sandbox
+
+Open `dev-demo bash` and preview cleanup first:
+
+```bash
+clear_caches --dry-run
+clear_docker --dry-run
+```
+
+`clear_caches` clears npm and npx caches, not Bun's cache. `clear_docker` stops and removes Docker containers and images **inside this sandbox**. Run either command without flags to review its confirmation prompt. `--confirm` skips the initial prompt; an interactive `clear_docker` run can separately offer to remove unused build cache and volumes.

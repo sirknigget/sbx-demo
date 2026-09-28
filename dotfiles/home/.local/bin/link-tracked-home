@@ -19,7 +19,7 @@ SELF_SOURCE=""
 LINKED_COUNT=0
 SKIPPED_COUNT=0
 
-# Link shared assets once, then point Claude's required discovery paths at their canonical sources.
+# Link repo assets once, then point Claude's skills at their canonical source.
 DIRECTORY_LINKS=(
   ".agents"
   ".omp/agent/agents"
@@ -158,6 +158,11 @@ while IFS= read -r -d '' source_path; do
   fi
   link_path "$source_path" "$rel_path"
 done < <(find "$SOURCE_DIR" \( -type f -o -type l \) -print0 | sort -z)
+
+if [[ -d "$SOURCE_DIR/.agents/skills" ]]; then
+  if ((!DRY_RUN)); then mkdir -p "$HOME/.claude"; fi
+  link_compatibility_path '.claude/skills' '../.agents/skills'
+fi
 
 if [[ -n "$SELF_SOURCE" ]]; then
   rel_path="${SELF_SOURCE#"$SOURCE_DIR"/}"

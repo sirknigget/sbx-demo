@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# Seeds runtime configuration with placeholders only; Docker owns the real tokens.
+set -euo pipefail
+mkdir -p "$HOME/.codex" "$HOME/.claude"
+umask 077
+
+cat > "$HOME/.codex/config.toml" <<'EOF'
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+EOF
+case "${SBX_CRED_OPENAI_MODE:-none}" in
+  oauth)
+    cat >> "$HOME/.codex/config.toml" <<'EOF'
+forced_login_method = "api"
+model_provider = "sandboxd"
+[model_providers.sandboxd]
+name = "Sandbox Proxy"
+base_url = "https://chatgpt.com/backend-api/codex"
+experimental_bearer_token = "oai-oat01-proxy-managed"
+requires_openai_auth = false
+wire_api = "responses"
+EOF
+    printf '%s\n' '{"OPENAI_API_KEY":"proxy-managed"}' > "$HOME/.codex/auth.json"
+    ;;
+  apikey)
+    printf '%s\n' 'forced_login_method = "api"' >> "$HOME/.codex/config.toml"
+    printf '%s\n' '{"OPENAI_API_KEY":"proxy-managed"}' > "$HOME/.codex/auth.json"
+    ;;
+esac
+
+# Leave Claude unauthenticated when no credential exists so its login flow works.
+# An API-key helper is enabled only for API-key mode; it must not shadow OAuth.
+if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" == apikey ]]; then
+  printf '%s\n' '{"apiKeyHelper":"printf proxy-managed"}' > "$HOME/.claude/settings.json"
+fi
+
+# Keep tracked defaults while exposing the providers available in this sandbox.
+mkdir -p "$HOME/.config/sbx-demo"
+{
+  printf 'enabledModels:\n'
+  case "${SBX_CRED_OPENAI_MODE:-none}" in
+    oauth) printf '  - openai-codex/*\n' ;;
+    apikey) printf '  - openai/*\n' ;;
+  esac
+  if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" != none ]]; then
+    printf '  - anthropic/*\n'
+  fi
+  fallback=''
+  case "${SBX_CRED_OPENAI_MODE:-none}" in
+    oauth) ;;
+    apikey) fallback=openai/gpt-6-sol ;;
+    none)
+      if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" != none ]]; then
+        fallback=anthropic/claude-sonnet-4-6
+      fi
+      ;;
+  esac
+  if [[ -n "$fallback" ]]; then
+    printf 'modelRoles:\n'
+    for role in default smol slow plan commit tiny task; do
+      printf '  %s: %s\n' "$role" "$fallback"
+    done
+    printf 'task:\n  agentModelOverrides:\n    task: %s\n' "$fallback"
+  fi
+} > "$HOME/.config/sbx-demo/providers.yml"

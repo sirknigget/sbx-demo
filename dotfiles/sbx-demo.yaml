@@ -1,0 +1,102 @@
+# syntax=docker/sandbox-kit:3
+schemaVersion: "3"
+kind: workload
+displayName: Dotfiles demo
+description: Repo-linked shell environment with OMP, Codex, and Claude Code
+dockerfile: Dockerfile
+
+capabilities:
+  - type: com.docker.sandbox/sbx@1
+  - type: com.docker.sandbox/privileged@1
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          - api.openai.com
+          - auth.openai.com
+          - chatgpt.com
+          - '*.chatgpt.com'
+          - files.openai.com
+          - releases.openai.com
+          - '*.oaiusercontent.com'
+          - api.anthropic.com
+          - console.anthropic.com
+          - platform.claude.com
+          - claude.ai
+          - claude.com
+          - code.claude.com
+          - downloads.claude.ai
+          - bridge.claudeusercontent.com
+          - github.com
+          - api.github.com
+          - raw.githubusercontent.com
+          - codeload.github.com
+          - objects.githubusercontent.com
+          - release-assets.githubusercontent.com
+          - registry.npmjs.org
+          - nodejs.org
+          - bun.sh
+          - registry-1.docker.io
+          - auth.docker.io
+          - production.cloudflare.docker.com
+          - archive.ubuntu.com
+          - security.ubuntu.com
+          - ports.ubuntu.com
+          - download.docker.com
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: OpenAI API key or host-managed ChatGPT login
+    config:
+      service: openai
+      phase: runtime
+      apiKey:
+        name: OPENAI_API_KEY
+        proxyManaged: true
+        inject:
+          - domain: api.openai.com
+            header: Authorization
+            format: "Bearer %s"
+      oauth:
+        tokenEndpoint:
+          host: auth.openai.com
+          path: /oauth/token
+        resourceHosts: [chatgpt.com]
+        sentinels:
+          accessToken: oai-oat01-proxy-managed
+          refreshToken: oai-ort01-proxy-managed
+        passthrough: false
+  - type: com.docker.sandbox/credential@1
+    optional: true
+    description: Optional Anthropic API key or Claude subscription login
+    config:
+      service: anthropic
+      phase: runtime
+      apiKey:
+        inject:
+          - domain: api.anthropic.com
+            header: x-api-key
+            format: "%s"
+      oauth:
+        tokenEndpoint:
+          host: platform.claude.com
+          path: /v1/oauth/token
+        resourceHosts: [api.anthropic.com]
+        sentinels:
+          accessToken: sk-ant-oat01-proxy-managed
+          refreshToken: sk-ant-ort01-proxy-managed
+        credentialFile:
+          path: ~/.claude/.credentials.json
+          structure:
+            claudeAiOauth:
+              accessToken: "{{.AccessToken}}"
+              refreshToken: "{{.RefreshToken}}"
+              expiresAt: "{{.ExpiresAt}}"
+              scopes: "{{.Scopes}}"
+        passthrough: false
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        - command: [/bin/bash, /home/agent/.local/bin/configure-provider-auth]
+          user: agent
+          env: [SBX_CRED_OPENAI_MODE, SBX_CRED_ANTHROPIC_MODE]
+          description: Configure provider CLIs to use host-managed credentials

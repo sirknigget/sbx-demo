@@ -1,5 +1,5 @@
 # Builds the demo image from the dotfiles/ directory as the Docker context.
-# Installs only OMP, Node.js, Bun, and the tools needed to install them.
+# Installs OMP, Codex, Claude Code, Node.js, and Bun.
 # Copies secret-free home files for the first boot; later links use the workspace.
 # Runs as the agent user and keeps credentials outside the image.
 
@@ -51,7 +51,16 @@ RUN npm install -g npm@11.17.0
 RUN npm_npmrc="$NPM_CONFIG_PREFIX/lib/node_modules/npm/npmrc" \
     && if [[ -f "$npm_npmrc" ]]; then sed -i '/^globalignorefile=\/etc\/npmignore$/d' "$npm_npmrc"; fi
 
+# Provider credentials are supplied by the v3 kit at runtime, never at build time.
+ARG CODEX_VERSION=0.158.0
+ARG CLAUDE_VERSION=2.1.284
+RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+ENV IS_SANDBOX=1
+ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
+
 # Copies only tracked configuration and example commands from this build context.
 COPY --chown=agent:agent home/ /home/agent/
 RUN chmod 755 /home/agent/.local/bin/*
 WORKDIR /home/agent
+ENTRYPOINT ["/bin/bash"]
+CMD ["-il"]

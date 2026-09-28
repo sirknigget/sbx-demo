@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Builds a demo template on the host and saves a timestamped backup.
+# Builds a v3 demo kit on the host and saves a timestamped template backup.
 # Optionally transfers OMP data from an existing sandbox before linking home.
 # Creates sbx-demo with the selected shared workspace mounted without VirtioFS cache.
 set -euo pipefail
@@ -69,7 +69,7 @@ resolve_mount() {
   *) die "dotfiles directory is not inside workspace mount: $workspace" ;;
   esac
   mounted="$workspace/$relative"
-  [[ -f "$script_dir/Dockerfile" && -f "$script_dir/copy-state.sh" && -d "$script_dir/home" ]] || die 'demo files are missing'
+  [[ -f "$script_dir/sbx-demo.yaml" && -f "$script_dir/Dockerfile" && -f "$script_dir/copy-state.sh" && -d "$script_dir/home" ]] || die 'demo files are missing'
 }
 
 # Checks that the new name is free and the optional old name exists.
@@ -78,17 +78,19 @@ check_sandbox_names() {
   if [[ -n "$old_name" ]] && ! sandbox_exists "$old_name"; then die "old sandbox not found: $old_name"; fi
 }
 
-# Saves each built template outside the checkout, as in the source migration flow.
-build_template() {
+# Selects a timestamped backup name before the v3 source build.
+prepare_backup() {
   local timestamp backup_dir
   timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
   image_tag="sbx-demo:local-$timestamp"
   backup_dir="$HOME/agent-sandbox-backup"
   archive="$backup_dir/sbx-demo__local_$timestamp.tar"
   mkdir -p -- "$backup_dir"
-  docker build -t "$image_tag" -f "$script_dir/Dockerfile" "$script_dir"
-  docker save -o "$archive" "$image_tag"
-  sbx template load "$archive"
+  # v3 builds export OCI artifacts, which require a docker-container builder.
+  # Select it only for this command; preserve the host's default builder.
+  if ! docker buildx inspect sbx-demo-kit >/dev/null 2>&1; then
+    docker buildx create --name sbx-demo-kit --driver docker-container
+  fi
 }
 
 # Transfers only the OMP data supported by this demo.
@@ -97,9 +99,12 @@ create_and_transfer() {
     sbx exec "$old_name" bash -lc "test -f \"\$1\"" bash "$mounted/copy-state.sh"
     run_copy_state "$old_name" export
   fi
-  # Codex selects host-managed OAuth; the template supplies OMP and Bash.
+  # sbx builds the v3 descriptor and its Dockerfile, then applies both providers.
   # Repo-owned skills must not overlap Docker's shared skills mount.
-  env DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo --skills off --pull never -t "$image_tag" codex "$workspace"
+  env BUILDX_BUILDER=sbx-demo-kit DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo --skills off "$script_dir" "$workspace"
+  # Save the fresh environment before importing private OMP state.
+  sbx stop sbx-demo
+  sbx template save sbx-demo "$image_tag" --output "$archive"
   sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
   if [[ -n "$old_name" ]]; then run_copy_state sbx-demo import; fi
 }
@@ -107,17 +112,37 @@ create_and_transfer() {
 # Relinks tracked files and checks only tools installed by this example image.
 link_and_report() {
   sbx exec sbx-demo bash -lc "bash ~/.local/bin/link-tracked-home \"\$1\"" bash "$mounted/home"
-  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version'
+  sbx exec sbx-demo bash -lc 'configure-provider-auth'
+  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version'
   # Exercise the same managed credential used by dev-demo, without tool access.
   sbx exec sbx-demo bash -lc '
-    [[ "${SBX_CRED_OPENAI_MODE:-}" == oauth ]] || {
-      printf "Error: Store the host login with sbx secret set openai --oauth, then recreate the sandbox.\n" >&2
-      exit 1
-    }
-    omp --provider openai-codex --api-key "$OPENAI_CODEX_OAUTH_TOKEN" \
-      --model openai-codex/gpt-6-luna --thinking minimal \
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == none ]]; then
+      printf "OpenAI inference check skipped: no host OpenAI login is stored.\n"
+      printf "Anthropic authentication is reported below; no paid Anthropic request is made.\n"
+      exit 0
+    fi
+    result=$(omp-managed \
       --no-tools --no-session --no-extensions --no-skills --no-title \
-      --max-time 60s -p "Reply with exactly SBX_CODEX_AUTH_OK."
+      --max-time 60s -p "Reply with exactly SBX_PROVIDER_AUTH_OK." </dev/null) || exit $?
+    printf "%s\n" "$result"
+    [[ "$result" == SBX_PROVIDER_AUTH_OK ]]
+  '
+  sbx exec -w /tmp sbx-demo bash -lc '
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == oauth ]]; then
+      result=$(timeout 90s codex exec --skip-git-repo-check --ephemeral \
+        -m gpt-6-sol -c model_reasoning_effort="low" \
+        "Reply with exactly SBX_CODEX_AUTH_OK. Do not use tools." </dev/null) || exit $?
+      printf "%s\n" "$result"
+      [[ "$result" == SBX_CODEX_AUTH_OK ]]
+    fi
+  '
+  sbx exec sbx-demo bash -lc '
+    printf "OpenAI mode: %s\nAnthropic mode: %s\n" "${SBX_CRED_OPENAI_MODE:-none}" "${SBX_CRED_ANTHROPIC_MODE:-none}"
+    codex login status || true
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == oauth ]]; then
+      printf "Codex uses host-managed OAuth through the proxy; the CLI labels its placeholder as an API key.\n"
+    fi
+    claude auth status || true
   '
   printf '\nDone.\n- New sandbox: sbx-demo\n- Template tag: %s\n- Template backup: %s\n- Workspace mount: %s\n- State migration: %s\n' "$image_tag" "$archive" "$workspace" "${old_name:-skipped}"
   if [[ -n "$old_name" ]]; then
@@ -130,6 +155,6 @@ parse_args "$@"
 check_inputs
 resolve_mount
 check_sandbox_names
-build_template
+prepare_backup
 create_and_transfer
 link_and_report
