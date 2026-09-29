@@ -94,7 +94,7 @@ The app backend and frontend should be served on port 3000, and kept open when t
 Install Playwright CLI globally on this machine, and use it for screenshot verification of the app's UI.
 Create a deterministic frontend E2E test with mock data for the three sections, with git-versioned screenshot snapshots of each section's UI for validation.
 
-Create a GitHub PR with only your changes - the implementation and the E2E test including the versioned screenshot snapshot.
+Create a new GitHub PR with only your changes - the implementation and the E2E test including the versioned screenshot snapshot. Do not examine or reuse older PRs.
 ```
 
 
@@ -112,7 +112,7 @@ For validation, you must install Playwright CLI globally on this machine (if not
 and verify that the snapshot is created and matches the expected frontend page layout. 
 The app backend+frontend should be fully functional and accessible on a docker on port 3001 on task completion. 
 
-Create a PR on GitHub with only your changes - the implementation and the E2E test including the versioned screenshot snapshot.
+Create a new PR on GitHub with only your changes - the implementation and the E2E test including the versioned screenshot snapshot. Do not examine or reuse older PRs.
 ```
 
 
