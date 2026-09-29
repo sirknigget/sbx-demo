@@ -76,17 +76,20 @@ The documentation for TypeSafe API is available at https://github.com/typesafe-a
 --------
 
 ```
+Work only under apps/control-plane.
+
 Create a web-based file browser, docker browser, and Codex task dispatcher.
 The backend is in Node.js and Express, and the frontend is in React.
 The app has a sidebar with three sections: File Browser, Docker Browser, and Codex Task Dispatcher:
 - allow users to browse the file heirarchy in this machine (read-only, no file display)
 - allow viewing Docker containers and their logs.
-- allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time.
+- allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time in a scrollable area.
+Task dispatching should support picking a working dir for codex.
 
 The app backend should be served on port 3000, frontend on port 3001, and both kept open when this task is done.
 
 Install Playwright CLI globally on this machine, and use it for screenshot verification of the app's UI.
-Create a deterministic frontend E2E test with mock data for the three sections, and for keep a git versioned screenshot snapshot of each section's UI for validation.
+Create a deterministic frontend E2E test with mock data for the three sections, with git-versioned screenshot snapshots of each section's UI for validation.
 
 Create a GitHub PR with the implementation and the E2E test including the versioned screenshot snapshot.
 ```
@@ -95,11 +98,16 @@ Create a GitHub PR with the implementation and the E2E test including the versio
 --------
 
 ```
-Create a colorful one-page react app published on port 3000, served from inside a docker.
-The theme of the app is "Agentic Engineering: stop with the slop". 
-For validation, you must install Playwright CLI globally on this machine, create an E2E test that creates a screenshot snapshot, 
-and verify that the snapshot is created and matches the expected output. 
-The app should be fully functional and accessible on a docker on port 3000 on task completion. 
+Work only under apps/agentic-engineering.
+
+Create a tiny backend + colorful one-page react app, both served from inside a docker.
+Port 3002 for backend, port 3003 for frontend.
+The theme of the app is "Agentic Engineering: stop with the slop".
+Only show this as a visually appealing page, with only one textbox and button that says "Send to Docker log".
+The button sends the input text to backend, which writes it to its console log.
+For validation, you must install Playwright CLI globally on this machine (if not installed already), create a deterministic E2E test that creates a git-versioned screenshot snapshot, 
+and verify that the snapshot is created and matches the expected frontend page layout. 
+The app should be fully functional and accessible on a docker on ports 3002 and 3003 on task completion. 
 Create a PR on GitHub with the implementation and the E2E test including the versioned screenshot snapshot.
 ```
 
