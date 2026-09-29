@@ -85,7 +85,7 @@ app.post('/api/tasks', async (req, res) => {
   const task = { id: randomUUID(), prompt: prompt.trim(), cwd: directory, status: 'running', output: '', exitCode: null, clients: new Set() };
   tasks.set(task.id, task);
   res.status(201).json(publicTask(task));
-  const child = spawn('codex', ['exec', '--json', '--sandbox', 'workspace-write', '--skip-git-repo-check', '-C', directory, task.prompt], { cwd: directory, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn('codex', ['exec', '--json', '--dangerously-bypass-approvals-and-sandbox', '--skip-git-repo-check', '-C', directory, task.prompt], { cwd: directory, stdio: ['ignore', 'pipe', 'pipe'] });
   let pending = '';
   child.stdout.on('data', chunk => {
     pending += chunk.toString();
