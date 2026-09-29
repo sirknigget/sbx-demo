@@ -1,0 +1,360 @@
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #f5f2ed;
+  background: #10101c;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 34px clamp(24px, 5.2vw, 82px) 28px;
+  background:
+    radial-gradient(circle at 76% 72%, #24204a 0, transparent 38%), #10101c;
+}
+.page-shell:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(#ffffff0b 1px, transparent 1px),
+    linear-gradient(90deg, #ffffff0b 1px, transparent 1px);
+  background-size: 68px 68px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 45%,
+    #000 83%,
+    transparent
+  );
+}
+.ambient {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+.ambient-one {
+  width: 540px;
+  height: 540px;
+  right: -165px;
+  top: 115px;
+  background: radial-gradient(circle, #8d52ff35, transparent 68%);
+}
+.ambient-two {
+  width: 430px;
+  height: 430px;
+  left: -280px;
+  bottom: 0;
+  background: radial-gradient(circle, #ff70652b, transparent 68%);
+}
+.topbar,
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font:
+    700 15px "Space Grotesk",
+    sans-serif;
+  letter-spacing: 0.07em;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  background: #ff715f;
+  color: #10101c;
+  border-radius: 8px;
+  font-size: 25px;
+  line-height: 1;
+}
+.brand-light {
+  font-weight: 400;
+  color: #c5bed0;
+}
+.edition,
+.footer,
+.eyebrow,
+.send-form label,
+.form-note {
+  font:
+    700 11px "Space Grotesk",
+    sans-serif;
+  letter-spacing: 0.18em;
+}
+.edition {
+  color: #afa6be;
+}
+.edition-dot {
+  color: #ddfc75;
+  margin: 0 7px;
+}
+.hero {
+  width: min(100%, 980px);
+  margin: 50px auto 45px;
+  position: relative;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: #e5d0ff;
+  background: #9c63fa25;
+  border: 1px solid #b477f74a;
+  border-radius: 100px;
+  padding: 11px 18px;
+  letter-spacing: 0.14em;
+}
+.eyebrow-spark {
+  font-size: 17px;
+  color: #d9ff75;
+}
+h1 {
+  font:
+    700 clamp(70px, 9.5vw, 142px) / 0.91 "Space Grotesk",
+    sans-serif;
+  letter-spacing: -0.092em;
+  margin: 32px 0 27px;
+}
+h1 span:first-child {
+  color: #faf5ec;
+}
+h1 span:nth-child(3) {
+  color: #bd8af8;
+}
+h1 span .period {
+  color: #ff7868;
+}
+.slogan-row {
+  display: flex;
+  align-items: center;
+  gap: 23px;
+}
+.stroke {
+  display: block;
+  width: 65px;
+  height: 4px;
+  background: #dcfb73;
+  border-radius: 20px;
+}
+.slogan-row p {
+  font:
+    500 clamp(30px, 4vw, 49px) / 1.1 "Space Grotesk",
+    sans-serif;
+  letter-spacing: -0.045em;
+  margin: 0;
+}
+.slogan-row em {
+  font-style: normal;
+  color: #ddfc75;
+  text-decoration: underline;
+  text-decoration-color: #ddfc7570;
+  text-underline-offset: 8px;
+}
+.intro {
+  max-width: 580px;
+  color: #bbb5c6;
+  font-size: 18px;
+  line-height: 1.65;
+  margin: 31px 0 49px;
+}
+.send-form {
+  max-width: 740px;
+}
+.send-form label {
+  display: block;
+  color: #efb3a8;
+  margin-bottom: 14px;
+}
+.input-row {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #ffffff29;
+  background: #ffffff0c;
+  border-radius: 17px;
+  box-shadow: 0 24px 70px #0003;
+}
+.input-row:focus-within {
+  border-color: #c18cff;
+}
+.input-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 18px 18px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font:
+    500 16px "DM Sans",
+    sans-serif;
+}
+.input-row input::placeholder {
+  color: #827b92;
+}
+.input-row button {
+  border: 0;
+  border-radius: 11px;
+  background: #ddfc75;
+  color: #171c13;
+  padding: 16px 21px;
+  white-space: nowrap;
+  cursor: pointer;
+  font:
+    700 14px "Space Grotesk",
+    sans-serif;
+  transition:
+    transform 0.2s,
+    background 0.2s;
+}
+.input-row button:hover {
+  background: #ecffab;
+  transform: translateY(-2px);
+}
+.input-row button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
+}
+.input-row button span {
+  font-size: 18px;
+  margin-left: 12px;
+}
+.form-note {
+  min-height: 17px;
+  margin: 14px 0 0;
+  color: #8f879e;
+  font-size: 10px;
+}
+.sticker {
+  position: absolute;
+  top: 220px;
+  right: clamp(40px, 8vw, 150px);
+  width: 170px;
+  height: 170px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #ff7766;
+  color: #17101d;
+  border-radius: 26px;
+  transform: rotate(13deg);
+  box-shadow: 16px 19px 0 #0a091644;
+  font:
+    700 27px/0.9 "Space Grotesk",
+    sans-serif;
+  letter-spacing: -0.06em;
+}
+.sticker-star {
+  font-size: 37px;
+  line-height: 1;
+}
+.footer {
+  position: absolute;
+  bottom: 27px;
+  left: clamp(24px, 5.2vw, 82px);
+  right: clamp(24px, 5.2vw, 82px);
+  padding-top: 20px;
+  border-top: 1px solid #ffffff22;
+  color: #91899f;
+}
+.footer span:last-child {
+  color: #dbcced;
+}
+@media (max-width: 1050px) {
+  .sticker {
+    right: 45px;
+    top: 170px;
+    width: 120px;
+    height: 120px;
+    font-size: 21px;
+  }
+  .sticker-star {
+    font-size: 25px;
+  }
+  .hero {
+    margin-top: 120px;
+  }
+}
+@media (max-width: 700px) {
+  .page-shell {
+    min-height: 100svh;
+    padding-top: 24px;
+  }
+  .edition {
+    display: none;
+  }
+  .brand {
+    font-size: 12px;
+  }
+  .hero {
+    margin: 90px auto 120px;
+  }
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.09em;
+  }
+  h1 {
+    font-size: clamp(53px, 12.4vw, 82px);
+    margin-top: 30px;
+  }
+  .sticker {
+    display: none;
+  }
+  .intro {
+    font-size: 16px;
+    margin: 26px 0 38px;
+  }
+  .slogan-row {
+    gap: 13px;
+  }
+  .stroke {
+    width: 28px;
+  }
+  .slogan-row p {
+    font-size: 29px;
+  }
+  .input-row {
+    display: block;
+  }
+  .input-row input {
+    width: 100%;
+    padding: 16px 12px;
+  }
+  .input-row button {
+    width: 100%;
+    padding: 16px;
+  }
+  .footer {
+    font-size: 9px;
+  }
+  .footer span:first-child {
+    max-width: 210px;
+    line-height: 1.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .input-row button {
+    transition: none;
+  }
+}
