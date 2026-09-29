@@ -69,6 +69,8 @@ Always show a table with the environment variable name, truncated value, classif
 Include all real_secret and dummy_test classifications, and include not_secret only when its confidence score is below 50%.
 Ensure it does not run for noninteractive scripts and does not print twice for a single shell startup.
 
+The source code should be located in this repo under src/jev-env/, but symlinked from the appropriate global folder in user home. 
+
 TypeSafe API key is available as TYPESAFE_API_KEY on this machine.
 The documentation for TypeSafe API is available at https://github.com/typesafe-ai/skills/blob/main/skills/typesafe-ai/SKILL.md.
 ```
@@ -76,7 +78,7 @@ The documentation for TypeSafe API is available at https://github.com/typesafe-a
 --------
 
 ```
-Work only under apps/control-plane.
+Work only under src/control-plane. Work in a separate worktree.
 
 Create a web-based file browser, docker browser, and Codex task dispatcher.
 The backend is in Node.js and Express, and the frontend is in React.
@@ -99,7 +101,7 @@ Create a GitHub PR with only your changes - the implementation and the E2E test 
 --------
 
 ```
-Work only under apps/agentic-engineering.
+Work only under src/agentic-engineering. Work in a separate worktree.
 
 Create a tiny backend + colorful one-page react app, both served from inside a docker.
 The theme of the app is "Agentic Engineering: stop with the slop".
