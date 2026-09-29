@@ -49,7 +49,7 @@ function App() {
           <label htmlFor="message">YOUR MESSAGE</label>
           <div className="input-row">
             <input id="message" name="message" type="text" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Type something worth logging..." maxLength={500} required />
-            <button type="submit" disabled={sending}>{sending ? 'Sending...' : 'Send to Docker log'} <span aria-hidden="true">↗</span></button>
+            <button type="submit" disabled={sending}>Send to Docker log <span aria-hidden="true">↗</span></button>
           </div>
           <p className="form-note" role="status" aria-live="polite">{status || 'ONE INPUT. ONE ACTION. NO EXTRA CEREMONY.'}</p>
         </form>
