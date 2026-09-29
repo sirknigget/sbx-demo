@@ -10,32 +10,32 @@ https://docs.docker.com/ai/sandboxes/get-started/
 
 ![sbx setup](assets/sbx-setup.png)
 
-_Optional - Storing Github access token in credential manager (replace with your token env variable):_
+_Optional (allow the agent to create PRs) - Storing Github access token in credential manager (replace with your token env variable):_
 
 `sbx secret set -g github -t "$GITHUB_AGENT_SANDBOX_TOKEN"`
 
 
-Optional - Store Jev API key in credential manager (replace with your token env variable):
+Optional (allow Jev usage) - Store Jev API key in credential manager (replace with your token env variable):
 
 ```
 sbx secret set-custom \
 --host api.typesafe.ai \
 --env TYPESAFE_API_KEY \
---value <secret>
+--value <your-typesafe-api-secret>
 ```
 
 
 ## Basic commands
 
 
-
-Spawn a new Codex sandbox from a template, mounted in this workspace: _(You can replace with 'claude' or others)_
+The most basic command - Spawn a new Codex sandbox from a template, mounted in this workspace: _(You can replace with 'claude' or others)_
 
 `sbx run codex`
 
-Create a named Codex sandbox with port 3000 exposed to the host, then start Bash inside it to update and launch Codex:
+**Let's do this instead:**
+Create a named Codex sandbox with ports 3000 and 3001 exposed to the host, then start Bash inside it to update Codex to latest version and launch it:
 
-`sbx create --name my-codex --publish 3000:3000 codex . && sbx exec -it my-codex bash -lc 'codex update && exec codex'`
+`sbx create --name my-codex --publish 3000:3000 --publish 3001:3001 codex . && sbx exec -it my-codex bash -lc 'codex update && exec codex'`
 
 
 _(First creation of a Codex sandbox will download image and prompt for Codex login)_
@@ -53,9 +53,9 @@ Execute a command in a running sandbox - in this example running interactive bas
 
 `sbx exec -it my-codex bash`
 
-Connect to a sandbox from Codex or Claude Code desktop, via SSH:
+To connect to a sandbox from Codex or Claude Code desktop, via SSH, use this URL:
 
-ssh://agent@my-codex.sbx
+`ssh://agent@my-codex.sbx`
 
 ### Example fully autonomous tasks to try (will touch system files, install tools and run Docker with no restrictions):
 
@@ -76,35 +76,42 @@ The documentation for TypeSafe API is available at https://github.com/typesafe-a
 --------
 
 ```
+Work only under apps/control-plane.
+
 Create a web-based file browser, docker browser, and Codex task dispatcher.
 The backend is in Node.js and Express, and the frontend is in React.
+
 The app has a sidebar with three sections: File Browser, Docker Browser, and Codex Task Dispatcher:
 - allow users to browse the file heirarchy in this machine (read-only, no file display)
-- allow viewing Docker containers and their logs.
-- allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time.
+- allow viewing Docker containers and their logs. When viewing a container, poll logs every second.
+- allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time in a scrollable area.
+Task dispatching should support picking a working dir for codex.
 
-The app backend should be served on port 3000, frontend on port 3001, and both kept open when this task is done.
+The app backend and frontend should be served on port 3000, and kept open when this task is done.
 
 Install Playwright CLI globally on this machine, and use it for screenshot verification of the app's UI.
-Create a deterministic frontend E2E test with mock data for the three sections, and for keep a git versioned screenshot snapshot of each section's UI for validation.
+Create a deterministic frontend E2E test with mock data for the three sections, with git-versioned screenshot snapshots of each section's UI for validation.
 
-Create a GitHub PR with the implementation and the E2E test including the versioned screenshot snapshot.
+Create a GitHub PR with only your changes - the implementation and the E2E test including the versioned screenshot snapshot.
 ```
 
 
 --------
 
 ```
-Create a colorful one-page react app published on port 3000, served from inside a docker.
-The theme of the app is "Agentic Engineering: stop with the slop". 
-For validation, you must install Playwright CLI globally on this machine, create an E2E test that creates a screenshot snapshot, 
-and verify that the snapshot is created and matches the expected output. 
-The app should be fully functional and accessible on a docker on port 3000 on task completion. 
-Create a PR on GitHub with the implementation and the E2E test including the versioned screenshot snapshot.
+Work only under apps/agentic-engineering.
+
+Create a tiny backend + colorful one-page react app, both served from inside a docker.
+The theme of the app is "Agentic Engineering: stop with the slop".
+Only show this as a visually appealing page, with only one textbox and button that says "Send to Docker log".
+The button sends the input text to backend, which writes it to its console log.
+
+For validation, you must install Playwright CLI globally on this machine (if not installed already), create a deterministic E2E test that creates a git-versioned screenshot snapshot, 
+and verify that the snapshot is created and matches the expected frontend page layout. 
+The app backend+frontend should be fully functional and accessible on a docker on port 3001 on task completion. 
+
+Create a PR on GitHub with only your changes - the implementation and the E2E test including the versioned screenshot snapshot.
 ```
-
-
-
 
 
 
@@ -150,6 +157,12 @@ After your sandbox got obliterated, please load the latest snapshot and move on 
 
 
 
+## Advanced developer environment
+
+The [dotfiles subproject](dotfiles/README.md) shows a more advanced setup for a portable, secure, and reproducible developer environment. 
+Its guide covers the sandbox setup and how to use it.
+
+
 
 ### Read about all the available features at https://docs.docker.com/ai/sandboxes/
 
@@ -161,3 +174,4 @@ After your sandbox got obliterated, please load the latest snapshot and move on 
 - Exposing ports and services
 - SSH access for desktop apps
 - Credential injection
+- Cloud sandboxes
