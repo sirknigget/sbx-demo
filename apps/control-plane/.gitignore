@@ -1,0 +1,9 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+.server.log
+.client.log
+.playwright-cli/
+.cli-config.json
+.cli-verification.png
