@@ -116,9 +116,6 @@ Create a PR on GitHub with the implementation and the E2E test including the ver
 
 
 
-
-
-
 ## Snapshots
 
 Save an ad-hoc template (snapshot):
@@ -156,6 +153,12 @@ _Optional - export and import_
 
 After your sandbox got obliterated, please load the latest snapshot and move on with your day like nothing happened.
 
+
+
+## Advanced developer environment
+
+The [dotfiles subproject](dotfiles/README.md) shows a more advanced setup for a portable, secure, and reproducible developer environment. 
+Its guide covers the sandbox setup and how to use it.
 
 
 
