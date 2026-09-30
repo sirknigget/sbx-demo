@@ -177,3 +177,7 @@ Its guide covers the sandbox setup and how to use it. You can ask your agent to 
 - SSH access for desktop apps
 - Credential injection
 - Cloud sandboxes
+
+### Issue tracker and latest releases
+
+https://github.com/docker/sbx-releases
