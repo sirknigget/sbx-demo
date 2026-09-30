@@ -162,7 +162,7 @@ After your sandbox got obliterated, please load the latest snapshot and move on 
 ## Advanced developer environment
 
 The [dotfiles subproject](dotfiles/README.md) shows a more advanced setup for a portable, secure, and reproducible developer environment. 
-Its guide covers the sandbox setup and how to use it.
+Its guide covers the sandbox setup and how to use it. You can ask your agent to follow it for you - or follow it by yourself.
 
 
 
