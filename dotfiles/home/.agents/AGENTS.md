@@ -23,8 +23,6 @@ software development.
 - Never checkout or switch to another branch or commit in the main worktree, unless explicitly asked
   to. Use a separate worktree for any other branch or commit to avoid interfering with the main
   worktree.
-- When asked to create, use, inspect, or remove a Git worktree, read and follow
-  `skill://git-worktree-workflow` first.
 - Some repos have pre-commit hooks, and git commit takes longer. For such cases use a suitable
   timeout and use the `command-runner` agent.
 - When working on a PR, if comprehensive local checks have passed and only CI checks remain, you may
@@ -45,34 +43,13 @@ use the `sbx-dotfiles-sync` skill and follow its scope rules.
 
 ## Shell commands
 
-Follow `shell-command-guidelines` in OMP and `shell-command-guidelines-claude` in Claude Code for
-Bash execution, output handling, and supervision.
+Follow `shell-command-guidelines` when running in OMP.
 
 ## Subagents
 
 Delegate only when it saves significant context, enables parallel independent work, or needs a
 specialist. Keep small and low output direct tasks in the main agent. Give each subagent a clear
 scope, all required context, constraints, and an observable result.
-
-Use the most specific available agent:
-
-- `scout`: read-only, low-reasoning codebase exploration and pattern discovery.
-- `codebase-research`: read-only deep codebase architecture, code-flow analysis, and planning
-  research and assistance.
-- `web-research`: thorough, multi-step web research with source comparison and synthesis.
-- `reader`: extraction and summaries from logs, reports, documents, and saved output or artifacts.
-- `command-runner`: commands that need monitoring, background execution, interaction, or an
-  uncertain run time (long builds, migrations, server starts, and full verification suites).
-- `debugger`: issue diagnosis and root-cause analysis.
-- `env-setup`: development environment blockers, dependencies, toolchain, and permissions work.
-- `developer`: well-scoped implementation and code maintenance work.
-- `planner`: deep-reasoning implementation plans and specifications.
-- `reviewer`: focused review against supplied guidelines and scope. if instructions tell you an
-  explicit prompt for this agent, do not add anything beyond the specified prompt.
-- `verifier`: independent verification of completed work, including running project testing and
-  verification suites
-- `sonic`: strictly mechanical edits or data collection.
-- `task`: general multi-step work when no specialist fits.
 
 The main agent owns decomposition, cross-task contracts, final decisions, integration, and
 interpretation of results. Run independent tasks in parallel. Do not delegate overlapping edits
@@ -155,3 +132,7 @@ perform.
   never use suppressions, semantic disguises, mechanical rewrites, or lazy workarounds merely to
   silence them. Report genuinely harmful or inapplicable checks and configure them honestly rather
   than hacking around them.
+
+## This machine
+
+- Agent skills live only under ~/.agents/skills. Do not work on skills in another folder.
