@@ -62,7 +62,8 @@ ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
 
 # Copies only tracked configuration and example commands from this build context.
 COPY --chown=agent:agent home/ /home/agent/
-RUN chmod 755 /home/agent/.local/bin/*
+RUN chmod 755 /home/agent/.local/bin/* \
+    && ln -s ../.agents/skills /home/agent/.claude/skills
 ENV BASH_ENV=/home/agent/.config/sbx-demo/shell-env.sh
 
 # Login shells may reset the image PATH; restore it after system profiles.

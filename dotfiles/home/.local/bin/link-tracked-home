@@ -22,6 +22,8 @@ SKIPPED_COUNT=0
 # Link repo assets once, then point Claude's skills at their canonical source.
 DIRECTORY_LINKS=(
   ".agents"
+  # Codex requires regular agent files; link their parent directory instead.
+  ".codex/agents"
   ".omp/agent/agents"
   ".omp/agent/extensions"
   ".omp/agent/rules"

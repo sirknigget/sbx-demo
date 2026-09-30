@@ -2,7 +2,7 @@
 
 This demo creates a sandbox named `sbx-demo`: a separate Linux environment with **OMP (Oh My Pi), Pi, Codex, Claude Code, Node.js, Bun, Git, and Docker** ready to use. You can work on this repository or any other project in your shared workspace.
 
-Your project files stay on your computer and are shared with the sandbox. Edits inside the sandbox also change those files on your computer. The sandbox's Bash, Git, OMP settings, and skills link back to this repository, so you can keep your setup under version control.
+Your project files stay on your computer and are shared with the sandbox. Edits inside the sandbox also change those files on your computer. The sandbox's Bash, Git, agent settings, and skills link back to this repository, so you can keep your setup under version control.
 
 Setup uses Docker **kits v3**. The kit describes the environment and its optional provider credentials; the accompanying Dockerfile installs the tools. One setup command builds and connects everything.
 
@@ -155,6 +155,8 @@ Then choose what to open:
 | `dev-demo claude` | Claude Code |
 | `dev-demo bash` | An interactive Bash shell |
 
+The agents run with full permissions inside Docker: Codex bypasses approvals and its inner sandbox, Claude Code skips permission checks, and OMP uses YOLO approval mode. Pi runs its tools without a permission gate and automatically trusts project files here.
+
 `~/.local/bin/` is permanently on the sandbox PATH, including login and noninteractive shells. Run included commands such as `link-tracked-home`, `clear_caches`, and `clear_docker` by name. `pi-managed` selects a host provider; plain `pi` lets you choose your own provider and use `/login`. See the [Pi authentication guide](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md).
 
 Each command opens the same project directory inside the sandbox. You do not need a separate sandbox for every project. A stopped sandbox starts when you use the launcher.
@@ -167,7 +169,22 @@ sbx stop sbx-demo
 
 ## Customize your environment
 
-Edit files under `dotfiles/home/` on the host to change Bash, Git, OMP settings, or repo skills. Existing linked files become available in the sandbox without rebuilding; restart the relevant shell or tool if it caches its settings.
+Edit files under `dotfiles/home/` on the host to change Bash, Git, agent settings, or repo skills. Existing linked files become available in the sandbox without rebuilding; restart the relevant shell or tool if it caches its settings.
+
+The user settings files are linked to these repo files:
+
+| Agent | File under `dotfiles/home/` |
+| --- | --- |
+| Codex | `.codex/config.toml` |
+| Claude Code | `.claude/settings.json` |
+| Pi | `.pi/agent/settings.json` |
+| OMP | `.omp/agent/config.yml` |
+
+Setup includes minimal initial settings even if an agent has never been opened. Edit these files to keep your preferences in Git. Codex’s separate `.codex/sandboxd.config.toml` profile provides host OAuth routing. Login files, session history, and generated provider overlays stay private in the sandbox; keep real keys out of tracked settings.
+
+Codex and Claude Code each include a `SessionStart` hook that reports the working directory and time, plus a `demo-reader` subagent that summarizes requested files. Try asking either agent: “Use demo-reader to summarize the dotfiles Dockerfile.” The examples inherit the sandbox’s full permissions. Their definitions live in `.codex/hooks.json`, `.claude/settings.json`, and each agent’s `agents/demo-reader` file; both hooks call the same `.config/sbx-demo/session-start.sh` script. In Codex, use `/hooks` to review and trust the example before its first run. See the [Codex hooks guide](https://developers.openai.com/codex/hooks) and [Claude hooks guide](https://code.claude.com/docs/en/hooks).
+
+The image template already links `~/.claude/skills` to `~/.agents/skills`, so Claude uses the shared skill folder before the repository is linked too.
 
 After adding new files, open a sandbox shell from the dotfiles directory. On the host:
 

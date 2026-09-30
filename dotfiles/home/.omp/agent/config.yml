@@ -27,6 +27,7 @@ skills:
 astGrep:
   enabled: true
 tools:
+  approvalMode: yolo
   artifactSpillThreshold: 10
   artifactTailBytes: 5
   artifactHeadBytes: 5

@@ -2,6 +2,7 @@
 
 # Runtime overrides keep migrated OMP logins from shadowing the host's credentials.
 set -euo pipefail
+set -- --approval-mode yolo "$@"
 case "${SBX_CRED_OPENAI_MODE:-none}" in
   oauth)
     exec omp --config "$HOME/.config/sbx-demo/providers.yml" --provider openai-codex --api-key oai-oat01-proxy-managed "$@"
