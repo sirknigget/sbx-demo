@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 # Builds a v3 demo kit on the host and saves a timestamped template backup.
-# Optionally transfers OMP data from an existing sandbox before linking home.
+# Optionally transfers agent state from an existing sandbox before linking home.
 # Creates sbx-demo with the selected shared workspace mounted without VirtioFS cache.
 set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "$0")" && pwd -P)
 
 # Reports missing inputs and failed prerequisites before the build starts.
 die() {
@@ -62,7 +64,6 @@ check_inputs() {
 # Resolves the demo paths inside the same mounted workspace on both sides.
 resolve_mount() {
   local relative
-  script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
   workspace=$(cd -- "$workspace" && pwd -P)
   case "$script_dir" in
   "$workspace"/*) relative=${script_dir#"$workspace"/} ;;
@@ -93,7 +94,7 @@ prepare_backup() {
   fi
 }
 
-# Transfers only the OMP data supported by this demo.
+# Transfers only the agent state supported by this demo.
 create_and_transfer() {
   if [[ -n "$old_name" ]]; then
     sbx exec "$old_name" bash -lc "test -f \"\$1\"" bash "$mounted/copy-state.sh"
@@ -102,7 +103,7 @@ create_and_transfer() {
   # sbx builds the v3 descriptor and its Dockerfile, then applies both providers.
   # Repo-owned skills must not overlap Docker's shared skills mount.
   env BUILDX_BUILDER=sbx-demo-kit DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo --skills off "$script_dir" "$workspace"
-  # Save the fresh environment before importing private OMP state.
+  # Save the fresh environment before importing private agent state.
   sbx stop sbx-demo
   sbx template save sbx-demo "$image_tag" --output "$archive"
   sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
@@ -111,9 +112,9 @@ create_and_transfer() {
 
 # Relinks tracked files and checks only tools installed by this example image.
 link_and_report() {
-  sbx exec sbx-demo bash -lc "bash ~/.local/bin/link-tracked-home \"\$1\"" bash "$mounted/home"
+  sbx exec sbx-demo bash -lc "link-tracked-home \"\$1\"" bash "$mounted/home"
   sbx exec sbx-demo bash -lc 'configure-provider-auth'
-  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version'
+  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version && pi --version'
   # Exercise the same managed credential used by dev-demo, without tool access.
   sbx exec sbx-demo bash -lc '
     if [[ "${SBX_CRED_OPENAI_MODE:-none}" == none ]]; then
@@ -136,6 +137,15 @@ link_and_report() {
       [[ "$result" == SBX_CODEX_AUTH_OK ]]
     fi
   '
+  sbx exec -w /tmp sbx-demo bash -lc '
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" != none ]]; then
+      result=$(timeout 90s pi-managed --no-tools --no-session --no-extensions \
+        --no-skills --no-context-files --thinking low \
+        -p "Reply with exactly SBX_PI_AUTH_OK." </dev/null) || exit $?
+      printf "%s\n" "$result"
+      [[ "$result" == SBX_PI_AUTH_OK ]]
+    fi
+  '
   sbx exec sbx-demo bash -lc '
     printf "OpenAI mode: %s\nAnthropic mode: %s\n" "${SBX_CRED_OPENAI_MODE:-none}" "${SBX_CRED_ANTHROPIC_MODE:-none}"
     codex login status || true
@@ -146,7 +156,7 @@ link_and_report() {
   '
   printf '\nDone.\n- New sandbox: sbx-demo\n- Template tag: %s\n- Template backup: %s\n- Workspace mount: %s\n- State migration: %s\n' "$image_tag" "$archive" "$workspace" "${old_name:-skipped}"
   if [[ -n "$old_name" ]]; then
-    printf 'Private OMP data may remain in %s/staging/. Review and remove it after the transfer.\n' "$script_dir"
+    printf 'Private agent state may remain in %s/staging/. Review and remove it after the transfer.\n' "$script_dir"
   fi
 }
 

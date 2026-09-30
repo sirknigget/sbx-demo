@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Host-managed providers take priority over migrated Pi credentials.
+set -euo pipefail
+case "${SBX_CRED_OPENAI_MODE:-none}" in
+  oauth) exec pi --provider openai-codex --model gpt-6-sol "$@" ;;
+  apikey) exec pi --provider openai --api-key proxy-managed "$@" ;;
+esac
+case "${SBX_CRED_ANTHROPIC_MODE:-none}" in
+  oauth) exec pi --provider anthropic --api-key sk-ant-oat01-proxy-managed "$@" ;;
+  apikey) exec pi --provider anthropic --api-key proxy-managed "$@" ;;
+esac
+exec pi "$@"

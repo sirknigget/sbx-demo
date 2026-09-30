@@ -2,7 +2,7 @@
 schemaVersion: "3"
 kind: workload
 displayName: Dotfiles demo
-description: Repo-linked shell environment with OMP, Codex, and Claude Code
+description: Repo-linked shell environment with OMP, Pi, Codex, and Claude Code
 dockerfile: Dockerfile
 
 capabilities:
@@ -96,6 +96,9 @@ capabilities:
   - type: com.docker.sandbox/lifecycle@1
     config:
       install:
+        - command: [/bin/sh, -c, 'grep -Fqx ". /etc/profile.d/sandbox-command-path.sh" /etc/sandbox-persistent.sh || printf "\n. /etc/profile.d/sandbox-command-path.sh\n" >> /etc/sandbox-persistent.sh']
+          user: root
+          description: Keep included commands on the persistent sandbox PATH
         - command: [/bin/bash, /home/agent/.local/bin/configure-provider-auth]
           user: agent
           env: [SBX_CRED_OPENAI_MODE, SBX_CRED_ANTHROPIC_MODE]

@@ -139,6 +139,10 @@ link_compatibility_path() {
   if ((DRY_RUN)); then
     printf 'link %s -> %s\n' "$rel_path" "$link_target"
   else
+    if [[ -e "$target_path" && ! -L "$target_path" ]]; then
+      printf 'keep %s (existing personal files)\n' "$rel_path"
+      return
+    fi
     rm -f "$target_path"
     ln -s "$link_target" "$target_path"
   fi
@@ -162,6 +166,8 @@ done < <(find "$SOURCE_DIR" \( -type f -o -type l \) -print0 | sort -z)
 if [[ -d "$SOURCE_DIR/.agents/skills" ]]; then
   if ((!DRY_RUN)); then mkdir -p "$HOME/.claude"; fi
   link_compatibility_path '.claude/skills' '../.agents/skills'
+  if ((!DRY_RUN)); then mkdir -p "$HOME/.pi/agent"; fi
+  link_compatibility_path '.pi/agent/skills' '../../.agents/skills'
 fi
 
 if [[ -n "$SELF_SOURCE" ]]; then

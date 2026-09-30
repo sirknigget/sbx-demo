@@ -1,5 +1,5 @@
 # Builds the demo image from the dotfiles/ directory as the Docker context.
-# Installs OMP, Codex, Claude Code, Node.js, and Bun.
+# Installs OMP, Pi, Codex, Claude Code, Node.js, and Bun.
 # Copies secret-free home files for the first boot; later links use the workspace.
 # Runs as the agent user and keeps credentials outside the image.
 
@@ -13,7 +13,7 @@ ENV PATH="/home/agent/.local/bin:/usr/local/bin:/usr/local/share/npm-global/bin:
 
 # Installs archive tools and lsof for safe state transfer.
 USER root
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl lsof unzip xz-utils \
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl lsof python3 unzip xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Pins release archives and checks their published hashes before installation.
@@ -54,13 +54,21 @@ RUN npm_npmrc="$NPM_CONFIG_PREFIX/lib/node_modules/npm/npmrc" \
 # Provider credentials are supplied by the v3 kit at runtime, never at build time.
 ARG CODEX_VERSION=0.158.0
 ARG CLAUDE_VERSION=2.1.284
+ARG PI_VERSION=0.99.1
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
+RUN npm install -g --ignore-scripts "@earendil-works/pi-coding-agent@${PI_VERSION}"
 ENV IS_SANDBOX=1
 ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
 
 # Copies only tracked configuration and example commands from this build context.
 COPY --chown=agent:agent home/ /home/agent/
 RUN chmod 755 /home/agent/.local/bin/*
+ENV BASH_ENV=/home/agent/.config/sbx-demo/shell-env.sh
+
+# Login shells may reset the image PATH; restore it after system profiles.
+USER root
+RUN ln -s /home/agent/.config/sbx-demo/shell-path.sh /etc/profile.d/sandbox-command-path.sh
+USER agent
 WORKDIR /home/agent
 ENTRYPOINT ["/bin/bash"]
 CMD ["-il"]

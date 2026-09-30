@@ -1,2 +1,3 @@
-# Keep the copied OMP database, private environment, and image archive untracked.
+# Keep private agent state and image archives untracked.
 /staging/
+__pycache__/

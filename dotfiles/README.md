@@ -1,6 +1,6 @@
 # Your development sandbox
 
-This demo creates a sandbox named `sbx-demo`: a separate Linux environment with **OMP (Oh My Pi), Codex, Claude Code, Node.js, Bun, Git, and Docker** ready to use. You can work on this repository or any other project in your shared workspace.
+This demo creates a sandbox named `sbx-demo`: a separate Linux environment with **OMP (Oh My Pi), Pi, Codex, Claude Code, Node.js, Bun, Git, and Docker** ready to use. You can work on this repository or any other project in your shared workspace.
 
 Your project files stay on your computer and are shared with the sandbox. Edits inside the sandbox also change those files on your computer. The sandbox's Bash, Git, OMP settings, and skills link back to this repository, so you can keep your setup under version control.
 
@@ -15,7 +15,7 @@ You need:
 - Docker installed and running, with Buildx available.
 - Docker Sandboxes (`sbx`) with kits v3 support. This flow was tested with `sbx` 0.46.0.
 - A local checkout of this repository.
-- Zsh for the `dev-demo` launcher.
+- Bash or Zsh for the host scripts and launcher. The sandbox uses Bash.
 
 The image is built for Linux ARM64. This setup has been tested on **macOS with Apple Silicon**; other platforms have not been tested. See the [Docker Sandboxes documentation](https://docs.docker.com/ai/sandboxes/) for installation and platform support.
 
@@ -68,7 +68,7 @@ Sign in on the host before creating the sandbox:
 sbx secret set openai --oauth
 ```
 
-Follow the sign-in instructions. If your OpenAI login is already stored, you do not need to sign in again. Both OMP and Codex will use it through Docker's host proxy.
+Follow the sign-in instructions. If your OpenAI login is already stored, you do not need to sign in again. OMP, Pi, and Codex will use it through Docker's host proxy.
 
 If you prefer an OpenAI API key, use `sbx secret set openai` and enter the key when prompted instead. API usage is billed separately from a ChatGPT subscription.
 
@@ -90,9 +90,9 @@ A free Claude account does not include Claude Code subscription access. Supporte
 
 With the kit's managed credentials, real tokens stay on the host. The tools inside the sandbox use placeholders that Docker replaces when sending provider requests. Do not paste tokens into tracked files in this repository. See [Docker's credential guide](https://docs.docker.com/ai/sandboxes/configuration/credentials/) for details.
 
-OMP starts with OpenAI when it is available, otherwise Anthropic. When neither is configured, it opens with its own login flow. Codex and Claude Code each use their respective provider.
+OMP and `dev-demo pi` start with OpenAI when it is available, otherwise Anthropic. When neither is configured, each tool keeps its own login flow. Codex and Claude Code each use their respective provider.
 
-For automatic provider selection, prepare your credentials before creation. If you add a previously absent provider later, a fresh setup picks up its mode and updates OMP's defaults; this guide does not automatically rebuild an existing sandbox.
+For automatic provider selection, prepare your credentials before creation. If you add a previously absent provider later, a fresh setup picks up its mode and updates the agents’ provider settings; this guide does not automatically rebuild an existing sandbox.
 
 ## 3. Create the sandbox
 
@@ -100,8 +100,10 @@ From your host terminal:
 
 ```bash
 cd "$SBX_DEMO_WORKSPACE/sbx-demo/dotfiles"
-bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE"
+./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE"
 ```
+
+Optionally add `--old-name OLD_SANDBOX` to bring OMP, Codex, Claude Code, and Pi history, settings, and saved logins from an **old sandbox**. Stop the agents there first and make sure it has this workspace mounted at the same path. The old sandbox stays in place; setup saves a clean template before importing, then applies this demo’s settings and host-managed credentials. Private copies remain in `dotfiles/staging/`; remove them after checking the transfer.
 
 The first build can take several minutes while it downloads tools. If Docker asks to approve the kit's credentials, review the displayed provider domains. Choose **Approve all** to allow this kit to use both declared providers; approval does not create a missing login or API key.
 
@@ -113,7 +115,7 @@ The setup:
 4. Links the repository's settings and skills into the sandbox. Docker's shared skill store is disabled; repo skills remain enabled.
 5. Checks installed tools and reports provider status.
 
-When OpenAI is configured, setup also makes a small OMP request. With OpenAI OAuth, it checks Codex with another small request. These use your provider allowance; API-key requests may incur usage charges. **Setup makes no paid Anthropic request.** A reported Claude login describes authentication, not whether your account has credits or model access.
+When OpenAI is configured, setup also makes small OMP and Pi requests. With OpenAI OAuth, it checks Codex with another small request. These use your provider allowance; API-key requests may incur usage charges. **Setup makes no paid Anthropic request.** A reported Claude login describes authentication, not whether your account has credits or model access.
 
 Look for `Done.` at the end. Missing provider credentials do not prevent creation. The script refuses to replace an existing sandbox named `sbx-demo`.
 
@@ -148,9 +150,12 @@ Then choose what to open:
 | Host command | Opens inside `sbx-demo` |
 | --- | --- |
 | `dev-demo` or `dev-demo omp` | OMP |
+| `dev-demo pi` | Pi |
 | `dev-demo codex` | Codex |
 | `dev-demo claude` | Claude Code |
 | `dev-demo bash` | An interactive Bash shell |
+
+`~/.local/bin/` is permanently on the sandbox PATH, including login and noninteractive shells. Run included commands such as `link-tracked-home`, `clear_caches`, and `clear_docker` by name. `pi-managed` selects a host provider; plain `pi` lets you choose your own provider and use `/login`. See the [Pi authentication guide](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/providers.md).
 
 Each command opens the same project directory inside the sandbox. You do not need a separate sandbox for every project. A stopped sandbox starts when you use the launcher.
 
@@ -159,20 +164,6 @@ In the Bash shell, use your normal development commands. Type `exit` to leave it
 ```bash
 sbx stop sbx-demo
 ```
-
-## Optional: bring OMP data from another sandbox
-
-Use this option **instead of the creation command in step 3**, before `sbx-demo` exists:
-
-```bash
-bash ./regenerate_sandbox --workspace-mount "$SBX_DEMO_WORKSPACE" --old-name OLD_SANDBOX
-```
-
-Replace `OLD_SANDBOX` with the source sandbox's name. It must already have this workspace and the demo scripts accessible at the same paths. The source is left in place.
-
-The transfer copies only OMP's `~/.omp/agent/agent.db` and optional `~/.omp/.env`. It does not copy the whole home directory, session files, Codex credentials, or Claude credentials. SQLite takes a consistent database snapshot, so OMP can keep running in the source. OMP must be stopped in the destination during import; the script checks this.
-
-Private copies remain in `dotfiles/staging/`. Git ignores this directory and Docker excludes it from builds. Review and remove the copied data after you finish. The template backup is saved before private OMP data is imported.
 
 ## Customize your environment
 
@@ -188,7 +179,7 @@ dev-demo bash
 Then, inside that sandbox shell:
 
 ```bash
-bash ~/.local/bin/link-tracked-home "$PWD/home"
+link-tracked-home "$PWD/home"
 ```
 
 Tool installs and pinned versions live in `Dockerfile`. Provider declarations live in `sbx-demo.yaml`. Changes to these require a fresh sandbox setup. The regeneration script deliberately leaves existing sandboxes alone; preserve any sandbox-only data before choosing to remove and recreate one.
