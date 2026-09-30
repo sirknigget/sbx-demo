@@ -1,0 +1,81 @@
+NixOS inside Docker Sandboxes: executed follow-up POC
+30 September 2026 · sbx v0.46.0 · Linux ARM64
+
+Result
+
+NixOS can run inside a Docker Sandbox as a nested container, including systemd, declared users, /etc configuration, system services, and the multi-user Nix daemon. This was built and boot-tested, not merely evaluated. The unmodified NixOS image did not work as a direct sandbox template. An adapted NixOS userland image passed ordinary Docker checks but also failed direct sandbox creation. Native template compatibility remains unproven for this version and these images.
+
+Replacing the sandbox's provider-owned microVM OS/kernel with NixOS is not exposed by the documented template/kit interface. A Docker template is a container image, not a bootable VM disk or ISO. The runtime contract explicitly prevents the image entrypoint from becoming the outer PID 1. NixOS can produce bootable VM images, but using one as the actual sandbox machine requires a backend that accepts and boots it. No such backend was tested here.
+
+Recommendation
+
+Keep the original template + Nix + Home Manager approach for the ordinary development sandbox. Use a nested NixOS container when testing NixOS system configuration and services is valuable. Use a NixOS VM backend when declaring the kernel, boot, and entire machine is an essential requirement. The nested route adds an extra environment and service lifecycle; it does not make the outer sandbox NixOS.
+
+Environment and scope
+
+Created nixos-image-builder-20260930 during this follow-up, from the local Nix template produced by the previous POC. It had four CPUs, 6 GiB RAM, no workspace mount, and shared skills disabled. No existing sandbox was used or modified. All docker build/run/import/commit commands used this new sandbox's private daemon. No host Docker daemon was used. The host Nix installation was not changed. The builder is retained and stopped for inspection.
+
+Built NixOS 26.05 from nixpkgs revision 7fc6f2c20af09cdcaf48b92ec3121860139ec668 using the official virtualisation/docker-image.nix module directly. flake.lock records the revision and source content hash. container.nix declares the agent account, UID/GID 1000, sudo, packages, /etc/nixos-poc.json, and a Python HTTP server as a systemd service. The rootfs archive was approximately 289 MB compressed; its exported Docker image was approximately 470 MB.
+
+Build output:
+/nix/store/mxxfz8bqbfrzwbvz95dly50jjq65dd66-tarball
+
+System generation:
+/nix/store/6xc11j1fin4a3nh3wbkp5y3diw5dkwig-nixos-system-nixos-sandbox-poc-26.05.20260928.7fc6f2c
+
+Observed checks
+
+1. Unprivileged nested container: failed, exit 255, with mount permission errors. This is a meaningful negative control; an ordinary container invocation did not boot this NixOS configuration.
+2. Privileged nested container: booted with /init, --privileged, --cgroupns=private, and tmpfs mounts for /run and /tmp. PID 1 was systemd inside this nested container. The outer sandbox retained its own runtime and kernel.
+3. Declarative service: systemctl reported nixos-poc-http.service active; HTTP returned "NixOS declarative service is running" through port 18081 on the builder's loopback interface.
+4. Identity/configuration: /etc/os-release identified NixOS 26.05; agent had UID/GID 1000 and wheel membership; declared JSON existed; sudo -n id returned root.
+5. Multi-user Nix: a command run as agent connected to the socket-activated daemon and reported Nix 2.34.8. nix-daemon.service became active. Its initial inactivity before a request was normal socket activation.
+6. Restart: the retained nested container booted again; the service, daemon, sudo, and declared JSON checks passed again.
+7. Cached rebuild: nix build --offline --no-update-lock-file returned the same rootfs store path. The system generation passed Nix store content verification. This is a cached repeat, not an independent byte-for-byte image rebuild or exhaustive closure verification.
+8. Raw image import/load: passed in private Docker and in the local sandbox template store. Direct sbx create failed to run the container. Before activation the image lacked the expected /bin/sh, /bin/bash, and /etc/passwd.
+9. Adapted image: a snapshot after NixOS activation plus prepared shell links, user accounts, actual NixOS sudo wrappers, BASH_ENV, and tini passed ordinary Docker shell/user/sudo checks. Direct sbx creation still failed. One debug attempt reported immediate exit code 126; the final attempt with tini reported a generic container launch failure. The exact remaining launch incompatibility was not established.
+
+The adapted image is an exploratory snapshot, not a declarative production image recipe. Dockerfile.userland and adapt-image.sh document the experiment. It does not boot systemd in an ordinary sandbox and is not recommended as a working template. verify-userland.sh is a prepared diagnostic that could not run because direct sandbox creation failed.
+
+Image and installation options
+
+Installing the Nix package manager on Ubuntu is supported and was demonstrated in the earlier POC; that does not install NixOS. Installing NixOS onto a disk normally requires control of the target filesystem, boot configuration, and machine boot. Running nixos-install against the outer sandbox was not attempted: its image/launch interface does not provide that deployment boundary.
+
+A real NixOS container image can be built from the official module, as demonstrated here. A kit can carry an exported image, load it into the private Docker engine, and start it with the tested flags. Packaging this into an automatic kit was not tested. A sandbox snapshot excludes its private /var/lib/docker state, so distribute the image archive or a registry artifact explicitly rather than assuming the nested image will be carried by a saved outer template.
+
+The privileged nested container has broad access within the sandbox's disposable VM. It still shares that VM's kernel, rather than a kernel built by this NixOS configuration. Mutable files, application data, container volumes, provider network policy, secrets, and machine sizing still need explicit handling. NixOS declares the selected system configuration; it does not make all runtime state reproducible or roll back database contents.
+
+Reproduce and inspect
+
+bash experiments/nixos-poc/create.sh
+
+The helper always creates a new mountless sandbox and requires the retained local nix-poc-repro:20260930 template. Its build/import/boot commands were executed during the POC; the combined helper was syntax-checked rather than run a second time end to end. It runs the unprivileged negative control and the privileged positive check. Do not run run-containers.sh twice in the same builder: the fixed POC container names intentionally collide instead of replacing existing resources.
+
+Inspect the retained builder (starting a container may need a moment to finish boot):
+sbx exec nixos-image-builder-20260930 bash -lc 'docker start nixos-systemd-poc; docker exec nixos-systemd-poc /run/current-system/sw/bin/bash -lc "cat /etc/os-release; systemctl is-active nixos-poc-http.service"'
+
+Local templates retained for the failed direct-image experiments:
+nixos-poc-base:20260930
+nixos-poc-userland:20260930
+
+No failed direct-image sandbox remains. Evidence includes failed attempts as well as the successful boot and restart. The meaningful final positive checks are container-boot.txt, adapt-image-final.txt, adapt-tini.txt, and restart-and-verify.txt. outcome.json records the route-level conclusions.
+
+Primary sources
+
+Official NixOS Docker image module, including privileged /init usage:
+https://github.com/NixOS/nixpkgs/blob/nixos-26.05/nixos/modules/virtualisation/docker-image.nix
+
+Docker sandbox launch contract, especially image identity/shell requirements and PID 1:
+https://github.com/docker/sandbox-kit-spec/blob/main/docs/spec/capabilities/com.docker.sandbox/sbx@1.md
+
+Custom sandbox image requirements:
+https://docs.docker.com/ai/sandboxes/customize/author/base-images/
+
+Sandbox architecture and per-sandbox Docker state:
+https://docs.docker.com/ai/sandboxes/architecture/
+
+Snapshot exclusions:
+https://docs.docker.com/ai/sandboxes/usage/
+
+NixOS image and installation documentation:
+https://nixos.org/manual/nixos/stable/

@@ -1,0 +1,6 @@
+{
+  "reference": "./experiments/nix-poc/kit",
+  "kind": "directory",
+  "valid": true,
+  "warnings": []
+}

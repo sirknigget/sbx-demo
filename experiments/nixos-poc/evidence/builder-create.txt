@@ -1,0 +1,17 @@
+── RESOLVE SETUP
+   resolving configuration…
+     sandbox    nixos-image-builder-20260930
+     agent      shell
+     workspace  none · no workspace bind mount
+     image      nix-poc-repro:20260930
+     cpu        4
+     memory     6g
+   ✓ configuration resolved
+── PREPARE IMAGE
+   → check nix-poc-repro:20260930
+   ✓ image ready
+── CREATE SANDBOX
+   ✓ Created sandbox nixos-image-builder-20260930
+
+To connect to this sandbox, run:
+  sbx run --name nixos-image-builder-20260930

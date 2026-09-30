@@ -1,0 +1,14 @@
+── RESOLVE SETUP
+   resolving configuration…
+     sandbox    nixos-userland-debug-20260930
+     agent      shell
+     workspace  none · no workspace bind mount
+     image      docker.io/library/nixos-poc-userland:20260930
+     cpu        4
+     memory     6g
+   ✓ configuration resolved
+── PREPARE IMAGE
+   → check docker.io/library/nixos-poc-userland:20260930
+   ✓ image ready
+WARN: mcp gateway teardown
+error: sandbox container exited with code 126 immediately after start

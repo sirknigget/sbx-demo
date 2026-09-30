@@ -1,0 +1,13 @@
+Sandbox nix-poc-kit2-20260930 started successfully
+[alias]
+	poc = "status --short"
+
+[core]
+	editor = "vi"
+	checkStat = minimal
+
+[init]
+	defaultBranch = "main"
+[safe]
+	directory = /home/agent/workspace
+path '/nix/store/4k0p2y2zdnnh3m4l90hj9s3s44p15n8a-hm_gitconfig' was modified! expected hash 'sha256:1gm1xr575cizqxhgcva3kdjp9pxrhma36x526lpvla625gz7hx8i', got 'sha256:1n32ig4wsfbj2x6yapn30pviaggk37cv22wn188rdgcbb1fm9nqs'

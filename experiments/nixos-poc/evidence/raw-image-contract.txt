@@ -1,0 +1,3 @@
+MISSING:/bin/sh
+MISSING:/bin/bash
+MISSING:/etc/passwd

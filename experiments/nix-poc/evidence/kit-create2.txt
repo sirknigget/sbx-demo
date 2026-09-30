@@ -1,0 +1,36 @@
+── RESOLVE SETUP
+   resolving configuration…
+     sandbox    nix-poc-kit2-20260930
+     agent      shell
+     kit        ./experiments/nix-poc/kit
+     workspace  none · no workspace bind mount
+     image      docker/sandbox-templates:shell-docker
+     cpu        4
+     memory     6g
+   ✓ configuration resolved
+── PREPARE IMAGE
+   → pull docker/sandbox-templates:shell-docker
+     1560168ac5fb already present
+     fdc1c83df86c already present
+     5bbe8539825f already present
+     6a42a4149724 already present
+     b2c007bbb5dc already present
+     84e55b2a5e0b already present
+     cc5f104d36e3 already present
+   ✓ image ready
+── CONFIGURE AGENT
+   → set 7 environment variable(s)
+   → copy 6 home file(s)
+   → run 2 install command(s)
+     $ bash /home/agent/nix-poc/bootstrap.sh (kit=nix-poc, user=1000)
+     ✓ bash /home/agent/nix-poc/bootstrap.sh (kit=nix-poc, user=1000, 15.0s)
+     $ bash /home/agent/nix-poc/apply.sh v1 (kit=nix-poc, user=1000)
+     ✓ bash /home/agent/nix-poc/apply.sh v1 (kit=nix-poc, user=1000, 13.5s)
+   → register 1 startup command(s), run on every container start
+     + sh -c { command -v apt-get && apt-get update -qq -y || true… (kit=shell, user=root)
+     view startup log: cat /var/log/sbx-kit-startup.log
+── CREATE SANDBOX
+   ✓ Created sandbox nix-poc-kit2-20260930
+
+To connect to this sandbox, run:
+  sbx run --name nix-poc-kit2-20260930

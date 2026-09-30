@@ -1,0 +1,4 @@
+Sandbox nixos-image-builder-20260930 started successfully
+Error response from daemon: container 6fcaa79ed51f057db28c3b8f8da6e9247589ed64dd5873470e522d42572bd82d is not running
+Error response from daemon: container 6fcaa79ed51f057db28c3b8f8da6e9247589ed64dd5873470e522d42572bd82d is not running
+-rw------- 1 agent agent 470M Sep 30 11:19 /home/agent/nixos-poc/nixos-base-image.tar

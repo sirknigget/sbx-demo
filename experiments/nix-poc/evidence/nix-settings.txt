@@ -1,0 +1,17 @@
+build-users-group = 
+require-sigs = true
+sandbox = false
+sandbox-build-dir = /build
+sandbox-dev-shm-size = 50%
+sandbox-fallback = true
+sandbox-paths = /bin/sh=/nix/store/jqx0km1dw9qqj0qnsr6kcqhr5zbfnjqy-busybox-1.37.0/bin/busybox
+substituters = https://cache.nixos.org/
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+total 36
+-r-xr-xr-x 1 agent agent 13116 Jan  1  1970 activate
+dr-xr-xr-x 2 agent agent  4096 Jan  1  1970 bin
+-r--r--r-- 1 agent agent     0 Jan  1  1970 extra-dependencies
+-r--r--r-- 1 agent agent     2 Jan  1  1970 gen-version
+-r--r--r-- 1 agent agent     6 Jan  1  1970 hm-version
+lrwxrwxrwx 1 agent agent    62 Jan  1  1970 home-files -> /nix/store/bxsk0kdp7jsbs549jg2j714n8dm1mjsy-home-manager-files
+lrwxrwxrwx 1 agent agent    61 Jan  1  1970 home-path -> /nix/store/r199j3b5bkcnwz6m62kkgkgq6yjxj3jd-home-manager-path

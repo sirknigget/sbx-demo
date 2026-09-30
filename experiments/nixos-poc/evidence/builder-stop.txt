@@ -1,0 +1,1 @@
+Sandbox 'nixos-image-builder-20260930' stopped; state preserved. Restart with: sbx run --name nixos-image-builder-20260930

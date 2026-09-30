@@ -1,0 +1,35 @@
+[
+  {
+    "name": "nix-poc-20260930",
+    "id": "3c2e03c1-8821-4b73-b718-90a7f10c825a",
+    "agent": "shell",
+    "status": "stopped",
+    "last_used_at": "2026-09-30T11:01:04.189834Z",
+    "cpus": 4,
+    "memory": "6g",
+    "memory_mib": 6144,
+    "created_at": "2026-09-30T10:45:03Z"
+  },
+  {
+    "name": "nix-poc-kit3-20260930",
+    "id": "9cb61d0b-058c-49c7-aad7-421e4858bb19",
+    "agent": "shell",
+    "status": "stopped",
+    "last_used_at": "2026-09-30T11:11:30.494227Z",
+    "cpus": 4,
+    "memory": "6g",
+    "memory_mib": 6144,
+    "created_at": "2026-09-30T10:59:23Z"
+  },
+  {
+    "name": "nix-poc-template-20260930",
+    "id": "13f83031-a43c-41f4-b0cf-ff04f14c72bc",
+    "agent": "shell",
+    "status": "stopped",
+    "last_used_at": "2026-09-30T11:11:30.499499Z",
+    "cpus": 4,
+    "memory": "6g",
+    "memory_mib": 6144,
+    "created_at": "2026-09-30T11:09:04Z"
+  }
+]

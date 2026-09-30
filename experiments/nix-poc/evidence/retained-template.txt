@@ -1,0 +1,1 @@
+docker.io/library/nix-poc-repro      20260930                         430f6b9b3223   shell-docker   4 minutes ago

@@ -1,0 +1,14 @@
+── RESOLVE SETUP
+   resolving configuration…
+     sandbox    nixos-userland-tini-20260930
+     agent      shell
+     workspace  none · no workspace bind mount
+     image      nixos-poc-userland:20260930
+     cpu        4
+     memory     6g
+   ✓ configuration resolved
+── PREPARE IMAGE
+   → check nixos-poc-userland:20260930
+   ✓ image ready
+WARN: mcp gateway teardown
+error: failed to run sandbox container

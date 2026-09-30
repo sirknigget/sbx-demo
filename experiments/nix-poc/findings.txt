@@ -1,0 +1,103 @@
+Nix for reproducible Docker Sandboxes
+
+Research and executed proof of concept · 30 September 2026 · sbx v0.46.0 · Linux ARM64
+
+Recommendation: use a pinned sandbox template for the base system, Nix for development tools, Home Manager for declared user configuration, and a kit for integration and runtime policy. This combination worked in fresh Docker Sandboxes. Installing Nix on Ubuntu does not make the whole operating system declarative. If control over the kernel, boot, users, and system services is essential, evaluate a provider that boots a NixOS VM.
+
+What Nix actually does
+
+Nix is a package manager and build system. A package definition describes its inputs and how to build it. Nix keeps outputs in distinct paths under /nix/store, including their dependencies, so different versions can coexist. You can select an environment without replacing the distribution’s packages.
+
+For this POC, flake.nix describes the tools and configuration; flake.lock fixes the exact source revisions and content hashes. Nixpkgs is the package collection. Home Manager uses those packages to generate a user environment and configuration files. A generation is a built version of that environment; activating an earlier generation restores its declared configuration. The lock must be saved alongside the definitions. Nix flake reference (https://nix.dev/manual/nix/2.34/command-ref/new-cli/nix3-flake.html), Home Manager setup (https://nix-community.github.io/home-manager/nix-flakes/standalone.html).
+
+Component | What it reproduces | Boundary |
+
+Nix development shell | Project tools, libraries, and environment variables | Does not configure the base operating system or provide a security boundary for commands run in the shell. |
+
+Nix and Home Manager | User tools and explicitly declared Git, shell, editor, and application configuration | Cannot automatically take ownership of every existing file. Activation can have side effects; configuration rollback is not a data backup. |
+
+NixOS | Operating system packages, kernel selection, boot configuration, users, system services, and declared system files | Requires a NixOS system or compatible deployment image. Mutable application data and provider infrastructure still need separate management. |
+
+System Manager | A subset of root-level files, packages, and services on another Linux distribution | A separate community tool, not automatic whole-OS conversion. Its service approach does not remove this sandbox’s missing systemd runtime. |
+
+These scope distinctions follow the NixOS manual (https://nixos.org/manual/nixos/stable/), Home Manager manual (https://nix-community.github.io/home-manager/installation.html), and System Manager project (https://github.com/numtide/system-manager). System Manager was researched but not installed or tested.
+
+What was executed
+
+All trials used sandboxes created during this task, with no host workspace mount and shared skills disabled. No existing demo sandbox was used. The host’s Nix installation was not changed. The successful independent environments were nix-poc-20260930 and nix-poc-kit3-20260930. Both used Ubuntu 26.04.1, ARM64, with tini as PID 1.
+
+The kit installs Nix 2.35.2 from a checksum-verified official tarball, enables flakes and Linux build sandboxing, and activates a Home Manager environment from the supplied lock. It provides Git 2.54.0, jq 1.8.2, ripgrep 15.1.0, GNU Hello 2.12.3, and declared Git and JSON configuration. A separate nix develop shell provides Python 3.13.15. All versions here are measured from the POC, not claims about the latest available versions.
+
+Check | Measured outcome |
+
+Reapply v1 | Same generation; approximately one second with cached inputs. |
+
+Change v1 to v2 | Different generation; JSON configuration and Git alias changed as declared. |
+
+Restore previous generation | JSON and Git alias returned to v1. |
+
+Unmanaged file collision | Activation failed and preserved the file. Moving it aside allowed activation to succeed. |
+
+Cached offline build | Same generation in approximately one second using --offline; lock unchanged. Initial population still requires a cache or network. |
+
+Independent fresh kit creation | Identical generation and derivation paths, lock hash, config hashes, and measured tool versions. See the two manifests and empty comparison diff. |
+
+Store checks | Generation and generated configuration paths passed integrity verification. Rebuilding the generation with the determinism check passed. |
+
+Nix build isolation | A negative control could see a marker in the outer sandbox’s /tmp and failed deliberately. The same build with sandbox = true could not see it and succeeded. |
+
+NixOS machine configuration | A pinned system configuration with users, tools, SSH settings, and an /etc file evaluated to a system derivation. It was not built, booted, or activated. |
+
+The successful fresh kit logged approximately 14.6 seconds for bootstrap and 12.5 seconds for Home Manager installation. These are one local observation, with existing runtime image and network caches; they are not a cold-start benchmark. After development-shell checks, each Nix store occupied about 1.9 GB, including compiler and documentation dependencies.
+
+The saved-template route also passed. The original environment was stopped and saved locally as nix-poc-repro:20260930. A new sandbox, nix-poc-template-20260930, created from that image without applying the Nix kit, passed the verification suite and produced the identical manifest. Saving took several minutes; the clone’s store was about 2.0 GB after its checks. This verifies reuse of the snapshot, not reproducibility of the image-build recipe. The successful sandboxes and local image were retained; the corrupted intermediate sandbox was removed after preserving its evidence.
+
+Integration issues found and fixed
+
+Git configuration corruption was the most consequential finding. Docker performs Git initialization after kit installs. If Home Manager’s XDG Git config is the only global config present, Docker’s imperative Git commands can modify the generated file in the single-user Nix store. An earlier trial produced the same generation path but a different Git config hash; verifying that leaf store path detected the modification. Reapplying an already built generation did not repair it.
+
+The bootstrap now creates a mutable ~/.gitconfig before Home Manager activation, giving Docker a distinct target for its own Git settings. Home Manager manages ~/.config/git/config; Git reads both. The successful fresh kit and subsequent starts preserved the declared config hash. This establishes interoperability for this tested template version, not a guarantee for future provider initialization changes.
+
+The base image also lacked xz and an initialized apt index at creation time. The bootstrap refreshes the index with bounded retries and installs xz-utils. Non-interactive exec sometimes omitted USER, so the bootstrap and apply scripts initialize it from the actual account before sourcing Nix’s profile. A persistent Docker Bash hook exposes Nix and Home Manager session variables without replacing the template’s shell files.
+
+Single-user installation fits this runtime because it lacks systemd. The official installer documents both modes and recommends multi-user installation where supported. The successful build-isolation probe allowed keeping Nix’s build sandbox enabled. Nevertheless, the agent owns this single-user store and has sudo inside its disposable sandbox. Store paths and integrity checks are useful for detecting drift; they do not enforce immutability against an agent with that access. Nix installation modes (https://nix.dev/manual/nix/2.34/installation/installing-binary.html).
+
+How reproducible is the whole machine
+
+The experiment proves reproducibility of the declared Nix environment on the tested architecture. It does not prove byte-identical filesystems, every package’s build determinism, another architecture, or long-term source availability. Matching a store path alone is insufficient: the Git corruption trial demonstrates why hashes and integrity checks also matter. Nix supports explicit determinism checks, but a pinned definition is not a universal guarantee that every upstream build is deterministic. Build reproducibility checks (https://nix.dev/manual/nix/2.34/advanced-topics/diff-hook.html).
+
+The create helper fixes the base image digest, and the lock fixes Nixpkgs and Home Manager. The Ubuntu bootstrap’s apt package candidate remains outside that lock. Docker’s startup logic and its mutable Git baseline are also outside Home Manager. For a production image, bake the bootstrap dependencies into a versioned template, pin or archive their artifacts, retain the Nix closure in a cache, and test creation against provider initialization.
+
+The microVM kernel, sandbox network policy, proxy credentials, CPU and memory limits, ports, volumes, project files, database contents, and externally downloaded language dependencies are not captured by this Nix configuration. Keep those in the provider configuration, project dependency locks, and backup or state management as appropriate. Do not put secrets into Nix-generated public store files or snapshot images.
+
+NixOS is the route to declaring more of the operating system. An Ubuntu sandbox does not become NixOS merely because Nix is installed. The original VM example remains evaluation-only and needs real boot, disk, and identity settings before deployment. A subsequent experiment built and booted a different NixOS configuration in a privileged nested container, with systemd, a declarative service, and the Nix daemon. Raw and adapted images failed direct sandbox creation. See ../nixos-poc/findings.txt for that executed follow-up. A provider-owned Docker Sandbox microVM is a different deployment boundary from a NixOS VM you control.
+
+Another option is to construct a container image using Nixpkgs dockerTools, declaring its package closure and generated root-level files. This can extend reproducibility to the image contents without deploying NixOS, but the image must still satisfy Docker Sandbox’s user, sudo, proxy, and launch requirements. It would not control the provider’s VM kernel. This approach was researched, not tested; retaining the working Docker base is the lower-effort next step. Official dockerTools documentation (https://github.com/NixOS/nixpkgs/blob/master/doc/build-helpers/images/dockertools.section.md).
+
+Is this better than scripts and a template
+
+My assessment is that Nix is a useful addition when toolchains change frequently, several projects need different versions, or environments must be shared across developers and CI. It gives a coherent dependency graph and explicit upgrades, with repeatable environment selection and configuration generations. A shell installer can also pin downloads; maintaining the full transitive dependency graph and rollback becomes its author’s responsibility.
+
+For a small environment that rarely changes, a pinned container image and a short installer may be simpler. Nix adds a language, a package ecosystem to learn, disk usage, cache planning, and potential compatibility work for binaries expecting traditional Linux paths. Home Manager introduces another boundary with provider-owned configuration. No comparison against this repository’s existing dotfiles implementation was performed because that folder was outside the authorized scope.
+
+For this Docker Sandbox workflow, I recommend piloting template + Nix + Home Manager + thin kit. Put heavy tool closures in the template to speed creation; use the kit for activation and sandbox policy. Keep project-specific tools in development shells. Adopt NixOS only when full OS control justifies changing the sandbox backend. Docker documents templates and kits as complementary, while kits remain experimental. Docker customization (https://docs.docker.com/ai/sandboxes/agents/custom-environments/).
+
+Run and inspect the POC
+
+bash experiments/nix-poc/create.sh
+
+# In the new sandbox printed by that helper:
+sbx exec NAME bash /home/agent/nix-poc/verify.sh
+sbx exec NAME bash -lc 'cd /home/agent/nix-poc; nix develop'
+sbx exec NAME bash /home/agent/nix-poc/apply.sh v2
+sbx exec NAME bash /home/agent/nix-poc/apply.sh v1
+
+# Reuse the saved local template; choose a name that does not already exist:
+sbx create --name nix-poc-template-new --skills off --pull never \
+  --template nix-poc-repro:20260930 shell
+
+The verification script intentionally switches POC configurations and tests a collision, then leaves v1 active. Use it only in these disposable POC sandboxes. Input updates are explicit: update the lock in a controlled environment, review the revision and generation changes, and ship the revised lock; the apply script refuses implicit lock updates.
+
+The kit uses schema v2 deliberately because the built-in shell workload uses v2. Docker’s v3 kits cannot be mixed with v2 built-in workloads. The installed CLI validated this kit with no warnings. Kit version compatibility (https://docs.docker.com/ai/sandboxes/customize/).
+
+See kit/spec.yaml and kit/files/home/nix-poc/ for the implementation and evidence/ for observed results, including failed trials. Dockerfile supplies an alternative image-build recipe; it is not claimed as build-tested. Template snapshot results and final retained resource state are recorded in evidence/outcome.json.

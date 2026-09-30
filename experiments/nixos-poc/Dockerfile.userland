@@ -1,0 +1,13 @@
+# POC adaptation of a boot-activated NixOS container snapshot.
+# This runs under sbx's init, so it does not boot NixOS systemd.
+FROM nixos-poc-activated:20260930
+USER root
+ENV PATH="/usr/bin:/bin:/sw/bin:/nix/var/nix/profiles/default/bin"
+COPY wrappers.tar /tmp/nixos-wrappers.tar
+COPY tini /usr/bin/tini
+RUN ["/sw/bin/bash", "-c", "set -eu; mkdir -p /bin /usr/bin /run/wrappers /home/agent/workspace; tar -xpf /tmp/nixos-wrappers.tar -C /run/wrappers; rm /tmp/nixos-wrappers.tar; ln -sf /sw/bin/bash /bin/bash; ln -sf /sw/bin/bash /bin/sh; ln -sf /nix/var/nix/profiles/system /run/current-system; ln -sf /run/wrappers/bin/sudo /usr/bin/sudo; touch /etc/sandbox-persistent.sh; chown agent:agent /home/agent/workspace /etc/sandbox-persistent.sh"]
+ENV BASH_ENV="/etc/sandbox-persistent.sh"
+USER agent
+WORKDIR /home/agent/workspace
+ENTRYPOINT ["/bin/bash"]
+CMD ["-l"]

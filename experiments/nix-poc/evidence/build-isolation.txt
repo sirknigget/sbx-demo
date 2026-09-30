@@ -1,0 +1,16 @@
+this derivation will be built:
+  /nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv
+building '/nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv'...
+error: Cannot build '/nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv'.
+       Reason: builder failed with exit code 1.
+       Output paths:
+         /nix/store/z86lrwxnvksfd9jgrw968nhsxfcqi5rv-nix-build-isolation-poc
+       Last 1 log lines:
+       > Build can see outer sandbox tmp file
+       For full logs, run:
+         nix log /nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv
+PASS-negative-control-sees-file
+this derivation will be built:
+  /nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv
+building '/nix/store/xgqyk2r249n4lpfimnp49paq6n51hd6d-nix-build-isolation-poc.drv'...
+/nix/store/z86lrwxnvksfd9jgrw968nhsxfcqi5rv-nix-build-isolation-poc

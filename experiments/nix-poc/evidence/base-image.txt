@@ -1,0 +1,26 @@
+Name:      docker.io/docker/sandbox-templates:shell-docker
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:1560168ac5fb9ce23d413c878349334c5845c07e264cd675d7867f0c78ad1761
+           
+Manifests: 
+  Name:        docker.io/docker/sandbox-templates:shell-docker@sha256:5bbe8539825fe1cace6dda2fb66919ef819324d905bea2795b8516aee0198222
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+               
+  Name:        docker.io/docker/sandbox-templates:shell-docker@sha256:fdc1c83df86c65c7572da4410b796bed5d71b75046c9e4aa31c9c0fe96d0c800
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.digest: sha256:5bbe8539825fe1cace6dda2fb66919ef819324d905bea2795b8516aee0198222
+    vnd.docker.reference.type:   attestation-manifest
+               
+  Name:        docker.io/docker/sandbox-templates:shell-docker@sha256:b2c007bbb5dcdb60a29f3019c7160ebe0c50c968e08854fbba6093834f8f6a1b
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+               
+  Name:        docker.io/docker/sandbox-templates:shell-docker@sha256:6a42a4149724401e6dbbb76d61114260f6628755851c9400127135bd65ce472f
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations: 
+    vnd.docker.reference.digest: sha256:b2c007bbb5dcdb60a29f3019c7160ebe0c50c968e08854fbba6093834f8f6a1b
+    vnd.docker.reference.type:   attestation-manifest

@@ -1,0 +1,13 @@
+unpacking 'github:nix-community/home-manager/e5fcd298a00f08b6e8390baf04aa8edb62203070' into the Git cache...
+unpacking 'github:NixOS/nixpkgs/7fc6f2c20af09cdcaf48b92ec3121860139ec668' into the Git cache...
+warning: creating lock file "/home/agent/nix-poc/flake.lock": 
+• Added input 'home-manager':
+    'github:nix-community/home-manager/e5fcd298a00f08b6e8390baf04aa8edb62203070?narHash=sha256-kaNo6xHiL31AbNNEreG0OTKf4j6Cxlo5bPawjX7lnbQ%3D' (2026-09-30)
+• Added input 'home-manager/nixpkgs':
+    follows 'nixpkgs'
+• Added input 'nixpkgs':
+    'github:NixOS/nixpkgs/7fc6f2c20af09cdcaf48b92ec3121860139ec668?narHash=sha256-bNyvoIyOCu7lzoCpWKWGIsHpTtERUWzqYWFPlN%2B%2BWTw%3D' (2026-09-28)
+error:
+       … while updating the lock file of flake 'path:/home/agent/nix-poc?lastModified=1790765449&narHash=sha256-ro7rSpaOfFmHGHfLk4Y72GxWBIo/SsTE56u6v3ZDM24%3D'
+
+       error: opening file "/home/agent/nix-poc/flake.lock": Permission denied

@@ -1,0 +1,20 @@
+  % Total    % Received % Xferd  Average Speed  Time    Time    Time   Current
+                                 Dload  Upload  Total   Spent   Left   Speed
+  0      0   0      0   0      0      0      0                              0  0      0   0      0   0      0      0      0                              0100 24.11M 100 24.11M   0      0 47.20M      0                              0100 24.11M 100 24.11M   0      0 47.20M      0                              0100 24.11M 100 24.11M   0      0 47.20M      0                              0
+/tmp/tmp.8y60YHJtMn/nix-2.35.2-aarch64-linux.tar.xz: OK
+Note: a multi-user installation is possible. See https://nix.dev/manual/nix/stable/installation/installing-binary.html#multi-user-installation
+performing a single-user installation of Nix...
+directory /nix does not exist; creating it by running 'mkdir -m 0755 /nix && chown agent /nix' using sudo
+copying Nix to /nix/store...
+
+installing 'nix-2.35.2'
+building '/nix/store/w3570rahiw3ql1x7c9h0rdkbvs5wy5b4-user-environment.drv'...
+
+Installation finished!  To ensure that the necessary environment
+variables are set, please add the line
+
+  . /home/agent/.nix-profile/etc/profile.d/nix.sh
+
+to your shell profile (e.g. ~/.profile).
+/home/agent/nix-poc/bootstrap.sh: line 30: nix: command not found
+nix (Nix) 2.35.2

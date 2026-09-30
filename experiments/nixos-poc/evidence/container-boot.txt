@@ -1,0 +1,82 @@
+-r--r--r-- 1 agent agent 289M Jan  1  1970 /nix/store/mxxfz8bqbfrzwbvz95dly50jjq65dd66-tarball/tarball/nixos-system-aarch64-linux.tar.xz
+sha256:878a575a46aebe141a0b331407949c1fcfb1d3faec830837604dd74dcaf71f8f
+4acde4805e6a163c8536c52c872aa63e1744fd6aa4f93c3cda21364143b18ae3
+{"Status":"exited","Running":false,"Paused":false,"Restarting":false,"OOMKilled":false,"Dead":false,"Pid":0,"ExitCode":255,"Error":"","StartedAt":"2026-09-30T11:19:16.708663726Z","FinishedAt":"2026-09-30T11:19:16.879261726Z"}
+mount: /: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /nix/store: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /nix/store: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+.resolvconf-wrapped: signature mismatch: /etc/resolv.conf
+.resolvconf-wrapped: run `resolvconf -u` to update
+
+[1;32m<<< NixOS Stage 2 >>>[0m
+
+booting system configuration /nix/store/6xc11j1fin4a3nh3wbkp5y3diw5dkwig-nixos-system-nixos-sandbox-poc-26.05.20260928.7fc6f2c
+running activation script...
+mount: /dev: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /dev/pts: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /dev/shm: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /proc: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /run: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+mount: /run/keys: permission denied.
+       dmesg(1) may have more information after failed mount system call.
+Activation script snippet 'specialfs' failed (32)
+setting up /etc...
+could not create symlink /etc/hostname at /nix/store/rg5rf512szdxmnj9qal3wfdnpfsx38qi-setup-etc.pl line 133.
+could not create symlink /etc/hosts at /nix/store/rg5rf512szdxmnj9qal3wfdnpfsx38qi-setup-etc.pl line 133.
+/nix/store/8m48bvi7bm7ns92670wzji7vv6x5478j-local-cmds: line 13: /run/systemd/container: No such file or directory
+starting systemd...
+6fcaa79ed51f057db28c3b8f8da6e9247589ed64dd5873470e522d42572bd82d
+curl: (56) Recv failure: Connection reset by peer
+{"Status":"running","Running":true,"Paused":false,"Restarting":false,"OOMKilled":false,"Dead":false,"Pid":8835,"ExitCode":0,"Error":"","StartedAt":"2026-09-30T11:19:24.871755896Z","FinishedAt":"0001-01-01T00:00:00Z"}
+.resolvconf-wrapped: signature mismatch: /etc/resolv.conf
+.resolvconf-wrapped: run `resolvconf -u` to update
+
+[1;32m<<< NixOS Stage 2 >>>[0m
+
+booting system configuration /nix/store/6xc11j1fin4a3nh3wbkp5y3diw5dkwig-nixos-system-nixos-sandbox-poc-26.05.20260928.7fc6f2c
+running activation script...
+setting up /etc...
+could not create symlink /etc/hostname at /nix/store/rg5rf512szdxmnj9qal3wfdnpfsx38qi-setup-etc.pl line 133.
+could not create symlink /etc/hosts at /nix/store/rg5rf512szdxmnj9qal3wfdnpfsx38qi-setup-etc.pl line 133.
+/nix/store/8m48bvi7bm7ns92670wzji7vv6x5478j-local-cmds: line 13: /run/systemd/container: No such file or directory
+starting systemd...
+ANSI_COLOR="0;38;2;126;186;228"
+BUG_REPORT_URL="https://github.com/NixOS/nixpkgs/issues"
+BUILD_ID="26.05.20260928.7fc6f2c"
+CPE_NAME="cpe:/o:nixos:nixos:26.05"
+DEFAULT_HOSTNAME=nixos
+DOCUMENTATION_URL="https://nixos.org/learn.html"
+HOME_URL="https://nixos.org/"
+ID=nixos
+ID_LIKE=""
+IMAGE_ID=""
+IMAGE_VERSION=""
+LOGO="nix-snowflake"
+NAME=NixOS
+PRETTY_NAME="NixOS 26.05 (Yarara)"
+SUPPORT_END="2026-12-31"
+SUPPORT_URL="https://nixos.org/community.html"
+VARIANT=""
+VARIANT_ID=""
+VENDOR_NAME=NixOS
+VENDOR_URL="https://nixos.org/"
+VERSION="26.05 (Yarara)"
+VERSION_CODENAME=yarara
+VERSION_ID="26.05"
+{"configuration":"NixOS Docker image POC","managedSystem":true}systemd
+uid=1000(agent) gid=1000(agent) groups=1000(agent),1(wheel)
+active
+inactive
+nix (Nix) 2.34.8
+/nix/store/6xc11j1fin4a3nh3wbkp5y3diw5dkwig-nixos-system-nixos-sandbox-poc-26.05.20260928.7fc6f2c
+NixOS declarative service is running
+uid=0(root) gid=0(root) groups=0(root)
+PASS: NixOS systemd and declarative service booted in a nested container

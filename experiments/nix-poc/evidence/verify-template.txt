@@ -1,0 +1,86 @@
+Sandbox nix-poc-template-20260930 started successfully
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+No change so reusing latest profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: repeated application selects identical generation
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+Creating new profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: configuration change creates a distinct generation
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+Creating new profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: activating previous generation restores config
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+No change so reusing latest profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: collision fails safely and preserves the unmanaged file
+PASS: cached build works offline; lock and base OS are unchanged
+Python 3.13.15
+jq-1.8.2
+ripgrep 15.1.0
+/nix/store/76jq0mngg7m8zv5yjz1qgg0xspzi8x2w-python3-3.13.15/bin/python3
+PASS: project development shell runs locked tools
+PASS: generation and generated configuration store integrity verified
+2.0G	/nix/store
+repeat_seconds=1
+offline_seconds=1
+{
+  "system": "aarch64-linux",
+  "generation": "/nix/store/f2j9pmnv8yf002xjskflnwy017r4bcik-home-manager-generation",
+  "derivation": "/nix/store/6mgrv9bpbxpr0nif5mb7ci6sgrd838h1-home-manager-generation.drv",
+  "lock_sha256": "52dfa5166d794c8758d2d575d9fbcef90b7c66bdbf41401e9ae4af8fbfc1cac9",
+  "config_sha256": "409eb2dd33f09595be43ca580d1a59cff95f412c07d2eae90ee840555f5ba323",
+  "git_config_sha256": "c23555009b28d9c8729daa33118c463797532ccb96c4b8d88b7611fcde74a370",
+  "versions": {
+    "nix": "nix (Nix) 2.35.2",
+    "git": "git version 2.54.0",
+    "jq": "jq-1.8.2",
+    "rg": "ripgrep 15.1.0",
+    "hello": "hello (GNU Hello) 2.12.3"
+  }
+}

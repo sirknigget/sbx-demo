@@ -1,0 +1,4 @@
+Snapshotting image in sandbox ...
+
+Save complete. To use the image as a template:
+    sbx run --pull never -t docker.io/library/nix-poc-repro:20260930 AGENT [WORKSPACE]

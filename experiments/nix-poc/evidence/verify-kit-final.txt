@@ -1,0 +1,121 @@
+Sandbox nix-poc-kit3-20260930 started successfully
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+No change so reusing latest profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: repeated application selects identical generation
+these 7 derivations will be built:
+  /nix/store/cgz5x50x0vyziacsh4iqxag8qas23m5a-hm-session-vars.sh.drv
+  /nix/store/5kys8wqxjzjdf7ajnmv6ciq9sh85rcv8-home-manager-path.drv
+  /nix/store/0vhi9i2q4yh62k00wvjy9ca692577wq3-activation-script.drv
+  /nix/store/c9ns9wwdjhpv864zgd9bm1bh100ic8wa-hm_nixpocsettings.json.drv
+  /nix/store/p46zbylpby8kkca4n4ylzbwfq0sryyag-hm_gitconfig.drv
+  /nix/store/gpp15qinqn2c054fw168iwjs5piv5p4w-home-manager-files.drv
+  /nix/store/pqca6cm4pzcsgyyfydz66aw8kkdq0vcr-home-manager-generation.drv
+building '/nix/store/cgz5x50x0vyziacsh4iqxag8qas23m5a-hm-session-vars.sh.drv'...
+building '/nix/store/c9ns9wwdjhpv864zgd9bm1bh100ic8wa-hm_nixpocsettings.json.drv'...
+building '/nix/store/p46zbylpby8kkca4n4ylzbwfq0sryyag-hm_gitconfig.drv'...
+building '/nix/store/5kys8wqxjzjdf7ajnmv6ciq9sh85rcv8-home-manager-path.drv'...
+building '/nix/store/gpp15qinqn2c054fw168iwjs5piv5p4w-home-manager-files.drv'...
+building '/nix/store/0vhi9i2q4yh62k00wvjy9ca692577wq3-activation-script.drv'...
+building '/nix/store/pqca6cm4pzcsgyyfydz66aw8kkdq0vcr-home-manager-generation.drv'...
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+Creating new profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+building '/nix/store/1x8xf1zp98as9sy2f6yc4x5ym0d219hp-user-environment.drv'...
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: configuration change creates a distinct generation
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+Creating new profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: activating previous generation restores config
+Starting Home Manager activation
+Activating checkFilesChanged
+Activating checkLinkTargets
+Activating writeBoundary
+No change so reusing latest profile generation
+Activating installPackages
+replacing old 'home-manager-path'
+installing 'home-manager-path'
+Activating linkGeneration
+Cleaning up orphan links from /home/agent
+Creating home file links in /home/agent
+Activating onFilesChange
+Activating reloadSystemd
+User systemd daemon not running. Skipping reload.
+PASS: collision fails safely and preserves the unmanaged file
+PASS: cached build works offline; lock and base OS are unchanged
+copying path '/nix/store/fd5812aa2ml4xqa4apa00rfwai9q4wgx-jq-1.8.2-dev' from 'https://cache.nixos.org'...
+copying path '/nix/store/hl29hcs0zy1bw4sh3wz87vsym8fx7081-expand-response-params' from 'https://cache.nixos.org'...
+copying path '/nix/store/5hd12qgii4c6pncl07b9sbb08imqa0sm-glibc-2.42-84-bin' from 'https://cache.nixos.org'...
+copying path '/nix/store/5bi9p7qdzbrbldmk02i1xwyc1g2zdfyx-gmp-6.3.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/nrd7l2ky475r6pcpqyvy4fg8wvs7ilrc-linux-headers-6.18.7' from 'https://cache.nixos.org'...
+copying path '/nix/store/lkvkmbd77df52y34jfb9idxfw09f0zb3-binutils-2.46-lib' from 'https://cache.nixos.org'...
+copying path '/nix/store/28c885yzr9mpzhslbfha7b8w0gnxzwnd-isl-0.20' from 'https://cache.nixos.org'...
+copying path '/nix/store/1fs5ppmszl70g70b8ssc9xskqa6ib8d4-mpfr-4.2.2' from 'https://cache.nixos.org'...
+copying path '/nix/store/l8gi64i6728rsyq0z8qkvfsicxaz7fhl-binutils-2.46' from 'https://cache.nixos.org'...
+copying path '/nix/store/4icwpw7jxpg4pgyd367sj06x8navqbzj-libmpc-1.4.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/bmy3kwy9ap95i36rfjm2nn9amjys57jn-glibc-2.42-84-dev' from 'https://cache.nixos.org'...
+copying path '/nix/store/wwdfqzlkqiahwaaxwnzkbffqfcy3wgav-gcc-15.3.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/hjbwg6w1cjf1p04czn58qcqgbzcd4rbd-binutils-wrapper-2.46' from 'https://cache.nixos.org'...
+copying path '/nix/store/0qkpwqdb61rmcjpay77jcc84chjb3jjs-gcc-wrapper-15.3.0' from 'https://cache.nixos.org'...
+copying path '/nix/store/x8a5x16n6vi3vrxz3bxg37wrdsj44l9n-stdenv-linux' from 'https://cache.nixos.org'...
+building '/nix/store/ncm8hyrz8mnfppqq9gd8fi5j87m9cs2b-nix-shell-env.drv'...
+this path will be fetched (107.5 KiB download, 107.4 KiB unpacked):
+  /nix/store/wz9cs2zx3zmbsy56bhh643qrwlpf46fj-bash-interactive-5.3p9-man
+copying path '/nix/store/wz9cs2zx3zmbsy56bhh643qrwlpf46fj-bash-interactive-5.3p9-man' from 'https://cache.nixos.org'...
+Python 3.13.15
+jq-1.8.2
+ripgrep 15.1.0
+/nix/store/76jq0mngg7m8zv5yjz1qgg0xspzi8x2w-python3-3.13.15/bin/python3
+PASS: project development shell runs locked tools
+PASS: generation and generated configuration store integrity verified
+1.9G	/nix/store
+repeat_seconds=1
+offline_seconds=1
+{
+  "system": "aarch64-linux",
+  "generation": "/nix/store/f2j9pmnv8yf002xjskflnwy017r4bcik-home-manager-generation",
+  "derivation": "/nix/store/6mgrv9bpbxpr0nif5mb7ci6sgrd838h1-home-manager-generation.drv",
+  "lock_sha256": "52dfa5166d794c8758d2d575d9fbcef90b7c66bdbf41401e9ae4af8fbfc1cac9",
+  "config_sha256": "409eb2dd33f09595be43ca580d1a59cff95f412c07d2eae90ee840555f5ba323",
+  "git_config_sha256": "c23555009b28d9c8729daa33118c463797532ccb96c4b8d88b7611fcde74a370",
+  "versions": {
+    "nix": "nix (Nix) 2.35.2",
+    "git": "git version 2.54.0",
+    "jq": "jq-1.8.2",
+    "rg": "ripgrep 15.1.0",
+    "hello": "hello (GNU Hello) 2.12.3"
+  }
+}

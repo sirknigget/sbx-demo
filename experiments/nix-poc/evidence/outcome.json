@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-30",
+  "sbx_version": "0.46.0",
+  "result": "passed",
+  "architecture_tested": "aarch64-linux",
+  "independent_kit_manifest_matches": true,
+  "template_manifest_matches": true,
+  "nix_build_isolation_probe": "passed with a failing negative control",
+  "generation_determinism_check": "passed",
+  "nixos_example": "evaluated only; not built or booted",
+  "dockerfile": "supplied but not build-tested",
+  "template": "docker.io/library/nix-poc-repro:20260930",
+  "retained_sandboxes": [
+    "nix-poc-20260930",
+    "nix-poc-kit3-20260930",
+    "nix-poc-template-20260930"
+  ],
+  "removed_trial": "nix-poc-kit2-20260930",
+  "bootstrap_gap": "xz-utils apt candidate is not covered by flake.lock",
+  "generation": "/nix/store/f2j9pmnv8yf002xjskflnwy017r4bcik-home-manager-generation"
+}

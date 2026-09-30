@@ -1,0 +1,22 @@
+{
+  "date": "2026-09-30",
+  "cli": "sbx 0.46.0",
+  "platform": "aarch64-linux",
+  "builder": "nixos-image-builder-20260930",
+  "builder_retained_stopped": true,
+  "host_workspace_mounted": false,
+  "existing_sandboxes_used": false,
+  "nixpkgs_revision": "7fc6f2c20af09cdcaf48b92ec3121860139ec668",
+  "nixos_release": "26.05",
+  "nested_unprivileged": "failed: exit 255, mount permissions",
+  "nested_privileged": "passed: systemd, declarative service, user, sudo, etc config, Nix daemon, restart",
+  "rootfs_offline_cached_rebuild": "passed: identical store path",
+  "system_generation_content_verification": "passed",
+  "direct_raw_template": "failed to run sandbox container",
+  "adapted_image_ordinary_docker": "passed shell, identity, sudo and tini checks",
+  "direct_adapted_template": "failed; compatibility unproven; precise remaining cause unresolved",
+  "outer_nixos_vm_boot": "not exposed by documented template/kit interface; not tested",
+  "automatic_nested_nixos_kit": "possible packaging route; not implemented or tested",
+  "retained_local_experimental_templates": ["nixos-poc-base:20260930", "nixos-poc-userland:20260930"],
+  "recommendation": "Nix plus Home Manager for ordinary sandbox; nested NixOS for system service tests; NixOS VM backend for kernel and boot control"
+}

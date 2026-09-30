@@ -1,0 +1,21 @@
+schemaVersion: "2"
+kind: mixin
+name: nix-poc
+displayName: Nix reproducible development environment POC
+description: Pinned Nix with locked Home Manager tools and configuration
+permissions:
+  network:
+    allow:
+      - releases.nixos.org
+      - cache.nixos.org
+      - github.com
+      - api.github.com
+      - codeload.github.com
+setup:
+  install:
+    - command: "bash /home/agent/nix-poc/bootstrap.sh"
+      user: "1000"
+      description: Install checksum verified Nix in single user mode
+    - command: "bash /home/agent/nix-poc/apply.sh v1"
+      user: "1000"
+      description: Activate the locked Home Manager environment

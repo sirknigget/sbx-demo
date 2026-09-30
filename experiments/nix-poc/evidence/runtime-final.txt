@@ -1,0 +1,26 @@
+PRETTY_NAME="Ubuntu 26.04.1 LTS"
+NAME="Ubuntu"
+VERSION_ID="26.04"
+VERSION="26.04.1 LTS (Resolute Raccoon)"
+VERSION_CODENAME=resolute
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=resolute
+LOGO=ubuntu-logo
+aarch64
+tini
+build-users-group = 
+require-sigs = true
+sandbox = true
+sandbox-build-dir = /build
+sandbox-dev-shm-size = 50%
+sandbox-fallback = true
+sandbox-paths = /bin/sh=/nix/store/jqx0km1dw9qqj0qnsr6kcqhr5zbfnjqy-busybox-1.37.0/bin/busybox
+substituters = https://cache.nixos.org/
+trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+xz-utils	5.8.3-1
+mutable-template-gitconfig-present

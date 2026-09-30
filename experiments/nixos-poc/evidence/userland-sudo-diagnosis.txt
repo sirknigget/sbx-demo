@@ -1,0 +1,38 @@
+Sandbox nixos-image-builder-20260930 started successfully
+lrwxrwxrwx 1 root root       25 Sep 30 11:22 /etc/nsswitch.conf -> /etc/static/nsswitch.conf
+lrwxrwxrwx 1 root root       22 Sep 30 11:22 /etc/pam.d/sudo -> /etc/static/pam.d/sudo
+-rw-r--r-- 1 root root     3539 Sep 30 11:22 /etc/passwd
+-rw-r----- 1 root shadow    801 Sep 30 11:22 /etc/shadow
+-rwsr-xr-x 1 root root   375168 Sep 30 11:24 /run/wrappers/bin/sudo
+readable-shadow
+agent-in-shadow
+# Account management.
+account required /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_unix.so # unix (order 11000)
+
+# Authentication management.
+auth sufficient /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_unix.so likeauth try_first_pass # unix (order 11700)
+auth required /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_deny.so # deny (order 12500)
+
+# Password management.
+password sufficient /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_unix.so nullok yescrypt # unix (order 10200)
+
+# Session management.
+session required /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_env.so conffile=/etc/pam/environment readenv=0 # env (order 10100)
+session required /nix/store/v98lw5i9c6f5k38av4i4wmji8qhni1dp-linux-pam-1.7.2/lib/security/pam_unix.so # unix (order 10200)
+passwd:    files systemd
+group:     files [success=merge] systemd
+shadow:    files systemd
+sudoers:   files
+
+hosts:     mymachines files myhostname dns
+networks:  files
+
+ethers:    files
+services:  files
+protocols: files
+rpc:       files
+
+subuid:    files
+subgid:    files
+agent:x:1000:1000::/home/agent:/run/current-system/sw/bin/bash
+shadow-lookup-works

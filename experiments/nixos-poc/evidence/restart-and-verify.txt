@@ -1,0 +1,13 @@
+nixos-systemd-poc
+curl: (56) Recv failure: Connection reset by peer
+NixOS declarative service is running
+NixOS declarative service is running
+warning: 'ping' is a deprecated alias for 'info'
+{"trusted":false,"url":"daemon","version":"2.34.8"}
+uid=0(root) gid=0(root) groups=0(root)
+active
+active
+{"configuration":"NixOS Docker image POC","managedSystem":true}checking '/nix/store/6xc11j1fin4a3nh3wbkp5y3diw5dkwig-nixos-system-nixos-sandbox-poc-26.05.20260928.7fc6f2c'...
+privileged=true cgroups=private
+nixos-systemd-poc
+PASS

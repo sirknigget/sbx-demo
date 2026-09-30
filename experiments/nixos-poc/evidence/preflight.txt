@@ -1,0 +1,5 @@
+Sandbox nixos-image-builder-20260930 started successfully
+uid=1000(agent) gid=1000(agent) groups=1000(agent),27(sudo),1001(docker)
+tini
+linux aarch64 cgroup=2
+error: flake 'path:/home/agent/nix-poc' does not provide attribute 'packages.aarch64-linux.inputs.nixpkgs.outPath', 'legacyPackages.aarch64-linux.inputs.nixpkgs.outPath' or 'inputs.nixpkgs.outPath'

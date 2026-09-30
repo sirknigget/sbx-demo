@@ -1,0 +1,47 @@
+this path will be fetched (9.3 KiB download, 67.6 KiB unpacked):
+  /nix/store/xrpk7asxrmhvzppm8fn24yc95wzzh68f-tini-0.19.0
+copying path '/nix/store/xrpk7asxrmhvzppm8fn24yc95wzzh68f-tini-0.19.0' from 'https://cache.nixos.org'...
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.userland
+#1 transferring dockerfile: 913B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nixos-poc-activated:20260930
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/5] FROM docker.io/library/nixos-poc-activated:20260930@sha256:b0e028bda90ff679bb0efb4588e973c2ab4fe04d24c093c01ffd8589c3f73379
+#4 resolve docker.io/library/nixos-poc-activated:20260930@sha256:b0e028bda90ff679bb0efb4588e973c2ab4fe04d24c093c01ffd8589c3f73379 done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 68.86kB done
+#5 DONE 0.0s
+
+#6 [2/5] COPY wrappers.tar /tmp/nixos-wrappers.tar
+#6 CACHED
+
+#7 [3/5] COPY tini /usr/bin/tini
+#7 DONE 0.0s
+
+#8 [4/5] RUN ["/sw/bin/bash", "-c", "set -eu; mkdir -p /bin /usr/bin /run/wrappers /home/agent/workspace; tar -xpf /tmp/nixos-wrappers.tar -C /run/wrappers; rm /tmp/nixos-wrappers.tar; ln -sf /sw/bin/bash /bin/bash; ln -sf /sw/bin/bash /bin/sh; ln -sf /nix/var/nix/profiles/system /run/current-system; ln -sf /run/wrappers/bin/sudo /usr/bin/sudo; touch /etc/sandbox-persistent.sh; chown agent:agent /home/agent/workspace /etc/sandbox-persistent.sh"]
+#8 DONE 0.1s
+
+#9 [5/5] WORKDIR /home/agent/workspace
+#9 DONE 0.0s
+
+#10 exporting to image
+#10 exporting layers 0.0s done
+#10 exporting manifest sha256:3233ce9b288ce5e5e3425e43f441c8158b9383db8508c6d11391892611830137 done
+#10 exporting config sha256:6c6e169f3550c96b61f77c91c21af4c5f197d3773e95fa9de8b127432fd0a604 done
+#10 exporting attestation manifest sha256:ec5594c52c27a59990e50f7cd56cb2d73e5e9beda543974237439fd2535c24f3 done
+#10 exporting manifest list sha256:7487061335bf2f48626c3e1acd1f57a8752b814227fbf08430162b1a9f508081 done
+#10 naming to docker.io/library/nixos-poc-userland:20260930 done
+#10 unpacking to docker.io/library/nixos-poc-userland:20260930 0.0s done
+#10 DONE 0.1s
+uid=1000(agent) gid=1000(agent) groups=1000(agent),1(wheel)
+uid=0(root) gid=0(root) groups=0(root)

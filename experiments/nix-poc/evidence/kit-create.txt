@@ -1,0 +1,45 @@
+── RESOLVE SETUP
+   resolving configuration…
+     sandbox    nix-poc-kit-20260930
+     agent      shell
+     kit        ./experiments/nix-poc/kit
+     workspace  none · no workspace bind mount
+     image      docker/sandbox-templates:shell-docker
+     cpu        4
+     memory     6g
+   ✓ configuration resolved
+── PREPARE IMAGE
+   → pull docker/sandbox-templates:shell-docker
+     1560168ac5fb already present
+     5bbe8539825f already present
+     fdc1c83df86c already present
+     b2c007bbb5dc already present
+     6a42a4149724 already present
+     cc5f104d36e3 already present
+     84e55b2a5e0b already present
+   ✓ image ready
+── CONFIGURE AGENT
+   → set 7 environment variable(s)
+   → copy 5 home file(s)
+   → run 2 install command(s)
+     $ bash /home/agent/nix-poc/bootstrap.sh (kit=nix-poc, user=1000)
+     ✗ bash /home/agent/nix-poc/bootstrap.sh (kit=nix-poc, user=1000, exit 100)
+     ── captured output ──
+     Reading package lists...
+     Building dependency tree...
+     Reading state information...
+     Package xz-utils is not available, but is referred to by another package.
+     This may mean that the package is missing, has been obsoleted, or
+     is only available from another source
+     E: Package 'xz-utils' has no installation candidate
+     ──────────────────────
+     $ bash /home/agent/nix-poc/apply.sh v1 (kit=nix-poc, user=1000)
+     ✗ bash /home/agent/nix-poc/apply.sh v1 (kit=nix-poc, user=1000, exit 1)
+     ── captured output ──
+     /home/agent/nix-poc/apply.sh: line 4: /home/agent/.nix-profile/etc/profile.d/nix.sh: No such file or directory
+     ──────────────────────
+   → register 1 startup command(s), run on every container start
+     + sh -c { command -v apt-get && apt-get update -qq -y || true… (kit=shell, user=root)
+     view startup log: cat /var/log/sbx-kit-startup.log
+WARN: mcp gateway teardown
+error: failed to apply kit to sandbox

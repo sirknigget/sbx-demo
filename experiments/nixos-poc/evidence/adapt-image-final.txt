@@ -1,0 +1,74 @@
+nixos-systemd-poc
+curl: (56) Recv failure: Connection reset by peer
+NixOS declarative service is running
+warning: 'ping' is a deprecated alias for 'info'
+{"trusted":false,"url":"daemon","version":"2.34.8"}
+active
+sha256:b0e028bda90ff679bb0efb4588e973c2ab4fe04d24c093c01ffd8589c3f73379
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile.userland
+#1 transferring dockerfile: 889B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/nixos-poc-activated:20260930
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [1/4] FROM docker.io/library/nixos-poc-activated:20260930@sha256:b0e028bda90ff679bb0efb4588e973c2ab4fe04d24c093c01ffd8589c3f73379
+#4 resolve docker.io/library/nixos-poc-activated:20260930@sha256:b0e028bda90ff679bb0efb4588e973c2ab4fe04d24c093c01ffd8589c3f73379 done
+#4 DONE 0.0s
+
+#5 [internal] load build context
+#5 transferring context: 2.10MB done
+#5 DONE 0.0s
+
+#6 [2/4] COPY wrappers.tar /tmp/nixos-wrappers.tar
+#6 DONE 0.0s
+
+#7 [3/4] RUN ["/sw/bin/bash", "-c", "set -eu; mkdir -p /bin /usr/bin /run/wrappers /home/agent/workspace; tar -xpf /tmp/nixos-wrappers.tar -C /run/wrappers; rm /tmp/nixos-wrappers.tar; ln -sf /sw/bin/bash /bin/bash; ln -sf /sw/bin/bash /bin/sh; ln -sf /nix/var/nix/profiles/system /run/current-system; ln -sf /run/wrappers/bin/sudo /usr/bin/sudo; touch /etc/sandbox-persistent.sh; chown agent:agent /home/agent/workspace /etc/sandbox-persistent.sh"]
+#7 DONE 0.1s
+
+#8 [4/4] WORKDIR /home/agent/workspace
+#8 DONE 0.0s
+
+#9 exporting to image
+#9 exporting layers 0.0s done
+#9 exporting manifest sha256:a725f845c0043689e9264c6446d5294444dfd9beb62da3b2ffb6e446bd99bc53 done
+#9 exporting config sha256:0902ad79f974151116595f6e54a53989b87140b90afecbd86a1bc1406943a7b8 done
+#9 exporting attestation manifest sha256:b7f7808fd9fb637f2ebe50f3b488150736f3e11236b756687414d6f1dfdf6bda done
+#9 exporting manifest list sha256:325f0728650ac7e6c18034fc4f462dc099e060dba16f7109154b4d5043451068 done
+#9 naming to docker.io/library/nixos-poc-userland:20260930 done
+#9 unpacking to docker.io/library/nixos-poc-userland:20260930 0.0s done
+#9 DONE 0.1s
+uid=1000(agent) gid=1000(agent) groups=1000(agent),1(wheel)
+ANSI_COLOR="0;38;2;126;186;228"
+BUG_REPORT_URL="https://github.com/NixOS/nixpkgs/issues"
+BUILD_ID="26.05.20260928.7fc6f2c"
+CPE_NAME="cpe:/o:nixos:nixos:26.05"
+DEFAULT_HOSTNAME=nixos
+DOCUMENTATION_URL="https://nixos.org/learn.html"
+HOME_URL="https://nixos.org/"
+ID=nixos
+ID_LIKE=""
+IMAGE_ID=""
+IMAGE_VERSION=""
+LOGO="nix-snowflake"
+NAME=NixOS
+PRETTY_NAME="NixOS 26.05 (Yarara)"
+SUPPORT_END="2026-12-31"
+SUPPORT_URL="https://nixos.org/community.html"
+VARIANT=""
+VARIANT_ID=""
+VENDOR_NAME=NixOS
+VENDOR_URL="https://nixos.org/"
+VERSION="26.05 (Yarara)"
+VERSION_CODENAME=yarara
+VERSION_ID="26.05"
+{"configuration":"NixOS Docker image POC","managedSystem":true}uid=0(root) gid=0(root) groups=0(root)
+/run/current-system/sw/bin/git
+/run/current-system/sw/bin/curl
+/run/current-system/sw/bin/bash
