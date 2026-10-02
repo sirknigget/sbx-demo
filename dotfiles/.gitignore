@@ -1,0 +1,3 @@
+# Keep private agent state and image archives untracked.
+/staging/
+__pycache__/

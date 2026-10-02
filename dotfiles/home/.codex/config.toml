@@ -1,0 +1,15 @@
+# User preferences; the sandbox launcher supplies provider routing separately.
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+model = "gpt-6-sol"
+model_reasoning_effort = "medium"
+
+# Register the demo subagent explicitly for the pinned CLI.
+[agents.demo-reader]
+description = "Summarize specified files with paths and line references for the dotfiles demo."
+config_file = "agents/demo-reader.toml"
+
+# Register environment maintenance as a separate agent.
+[agents.env-setup]
+description = "Set up, repair, or upgrade project and sandbox tools, packages, and environments."
+config_file = "agents/env-setup.toml"

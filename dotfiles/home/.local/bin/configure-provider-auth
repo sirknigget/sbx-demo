@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Seeds runtime configuration with placeholders only; Docker owns the real tokens.
+set -euo pipefail
+umask 077
+python3 "$HOME/.config/sbx-demo/provider-auth.py"
+
+# Keep tracked defaults while exposing the providers available in this sandbox.
+mkdir -p "$HOME/.config/sbx-demo"
+{
+  printf 'enabledModels:\n'
+  case "${SBX_CRED_OPENAI_MODE:-none}" in
+    oauth) printf '  - openai-codex/*\n' ;;
+    apikey) printf '  - openai/*\n' ;;
+  esac
+  if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" != none ]]; then
+    printf '  - anthropic/*\n'
+  fi
+  fallback=''
+  case "${SBX_CRED_OPENAI_MODE:-none}" in
+    oauth) ;;
+    apikey) fallback=openai/gpt-6-sol ;;
+    none)
+      if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" != none ]]; then
+        fallback=anthropic/claude-sonnet-4-6
+      fi
+      ;;
+  esac
+  if [[ -n "$fallback" ]]; then
+    printf 'modelRoles:\n'
+    for role in default smol slow plan commit tiny task; do
+      printf '  %s: %s\n' "$role" "$fallback"
+    done
+    printf 'task:\n  agentModelOverrides:\n    task: %s\n' "$fallback"
+  fi
+} > "$HOME/.config/sbx-demo/providers.yml"

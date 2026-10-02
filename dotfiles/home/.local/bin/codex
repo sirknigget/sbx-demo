@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Full permissions inside Docker; provider routing leaves linked preferences alone.
+set -euo pipefail
+case "${SBX_CRED_OPENAI_MODE:-none}" in
+  oauth) set -- --profile sandboxd "$@" ;;
+  apikey) set -- -c 'model_provider="openai"' -c 'forced_login_method="api"' "$@" ;;
+esac
+exec "${NPM_CONFIG_PREFIX:-/usr/local/share/npm-global}/bin/codex" \
+  --dangerously-bypass-approvals-and-sandbox "$@"

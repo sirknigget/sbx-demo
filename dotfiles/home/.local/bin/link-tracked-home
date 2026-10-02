@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+
+# Links tracked home files from the mounted repository.
+# Synchronizes locked command projects after directory links are created.
+# Keeps copied home files as bootstrap material only.
+set -euo pipefail
+usage() {
+  cat <<'EOF'
+Usage: link-tracked-home [--dry-run] /path/to/dotfiles/home
+
+Replace tracked files in $HOME with symlinks to the mounted repo copy.
+EOF
+}
+
+DRY_RUN=0
+SOURCE_DIR=""
+SELF_TARGET="$(readlink -f "$0" 2>/dev/null || printf '%s\n' "$0")"
+SELF_SOURCE=""
+LINKED_COUNT=0
+SKIPPED_COUNT=0
+
+# Link repo assets once, then point Claude's skills at their canonical source.
+DIRECTORY_LINKS=(
+  ".agents"
+  # Codex requires regular agent files; link their parent directory instead.
+  ".codex/agents"
+  ".omp/agent/agents"
+  ".omp/agent/extensions"
+  ".omp/agent/rules"
+  ".omp/agent/themes"
+)
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+  --dry-run)
+    DRY_RUN=1
+    ;;
+  -h | --help)
+    usage
+    exit 0
+    ;;
+  -*)
+    echo "Error: unknown option: $1" >&2
+    usage >&2
+    exit 1
+    ;;
+  *)
+    if [[ -n "$SOURCE_DIR" ]]; then
+      echo "Error: expected exactly one source directory" >&2
+      usage >&2
+      exit 1
+    fi
+    SOURCE_DIR="$1"
+    ;;
+  esac
+  shift
+done
+
+if [[ -z "$SOURCE_DIR" ]]; then
+  usage >&2
+  exit 1
+fi
+
+SOURCE_DIR="$(readlink -f "$SOURCE_DIR")"
+if [[ ! -d "$SOURCE_DIR" ]]; then
+  echo "Error: source directory not found: $SOURCE_DIR" >&2
+  exit 1
+fi
+
+is_directory_link_path() {
+  local rel_path="$1"
+  local dir_link
+  for dir_link in "${DIRECTORY_LINKS[@]}"; do
+    if [[ "$rel_path" == "$dir_link" || "$rel_path" == "$dir_link/"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Synchronizes one locked command project after the linker creates its directory link.
+# Skips the project when the tracked files do not contain its project definition.
+sync_project() {
+  local project="$1"
+  local rel_path="$2"
+
+  [[ -f "$project/pyproject.toml" ]] || return 0
+  printf 'sync %s\n' "$rel_path"
+  if ((!DRY_RUN)); then
+    uv sync --project "$project" --locked >/dev/null
+  fi
+}
+
+# Links one tracked path.
+# Changes its target only when dry run is off.
+link_path() {
+  local source_path="$1"
+  local rel_path="$2"
+  local target_path="$HOME/$rel_path"
+  local current_target
+
+  if [[ "$target_path" == "$SELF_TARGET" ]]; then
+    SELF_SOURCE="$source_path"
+    return
+  fi
+
+  if [[ -L "$target_path" ]]; then
+    current_target="$(readlink -f "$target_path" 2>/dev/null || true)"
+    if [[ "$current_target" == "$source_path" ]]; then
+      printf 'ok %s\n' "$rel_path"
+      ((SKIPPED_COUNT += 1))
+      return
+    fi
+  fi
+
+  if ((DRY_RUN)); then
+    printf 'link %s -> %s\n' "$rel_path" "$source_path"
+  else
+    mkdir -p "$(dirname "$target_path")"
+    if [[ -d "$target_path" && ! -L "$target_path" ]]; then
+      rm -rf "$target_path"
+    fi
+    rm -f "$target_path"
+    ln -s "$source_path" "$target_path"
+  fi
+  ((LINKED_COUNT += 1))
+}
+
+link_compatibility_path() {
+  local rel_path="$1"
+  local link_target="$2"
+  local target_path="$HOME/$rel_path"
+
+  # The tracked settings file creates ~/.claude before compatibility aliases are installed.
+  if [[ -L "$target_path" && "$(readlink "$target_path")" == "$link_target" ]]; then
+    printf 'ok %s\n' "$rel_path"
+    ((SKIPPED_COUNT += 1))
+    return
+  fi
+
+  if ((DRY_RUN)); then
+    printf 'link %s -> %s\n' "$rel_path" "$link_target"
+  else
+    if [[ -e "$target_path" && ! -L "$target_path" ]]; then
+      printf 'keep %s (existing personal files)\n' "$rel_path"
+      return
+    fi
+    rm -f "$target_path"
+    ln -s "$link_target" "$target_path"
+  fi
+  ((LINKED_COUNT += 1))
+}
+
+for rel_path in "${DIRECTORY_LINKS[@]}"; do
+  source_path="$SOURCE_DIR/$rel_path"
+  [[ -d "$source_path" ]] || continue
+  link_path "$source_path" "$rel_path"
+done
+
+while IFS= read -r -d '' source_path; do
+  rel_path="${source_path#"$SOURCE_DIR"/}"
+  if is_directory_link_path "$rel_path"; then
+    continue
+  fi
+  link_path "$source_path" "$rel_path"
+done < <(find "$SOURCE_DIR" \( -type f -o -type l \) -print0 | sort -z)
+
+if [[ -d "$SOURCE_DIR/.agents/skills" ]]; then
+  if ((!DRY_RUN)); then mkdir -p "$HOME/.claude"; fi
+  link_compatibility_path '.claude/skills' '../.agents/skills'
+  if ((!DRY_RUN)); then mkdir -p "$HOME/.pi/agent"; fi
+  link_compatibility_path '.pi/agent/skills' '../../.agents/skills'
+fi
+
+if [[ -n "$SELF_SOURCE" ]]; then
+  rel_path="${SELF_SOURCE#"$SOURCE_DIR"/}"
+  target_path="$HOME/$rel_path"
+  current_target=""
+
+  if [[ -L "$target_path" ]]; then
+    current_target="$(readlink -f "$target_path" 2>/dev/null || true)"
+    if [[ "$current_target" == "$SELF_SOURCE" ]]; then
+      printf 'ok %s\n' "$rel_path"
+      ((SKIPPED_COUNT += 1))
+    else
+      if ((DRY_RUN)); then
+        printf 'link %s -> %s\n' "$rel_path" "$SELF_SOURCE"
+      else
+        rm -f "$target_path"
+        ln -s "$SELF_SOURCE" "$target_path"
+      fi
+      ((LINKED_COUNT += 1))
+    fi
+  else
+    if ((DRY_RUN)); then
+      printf 'link %s -> %s\n' "$rel_path" "$SELF_SOURCE"
+    else
+      rm -f "$target_path"
+      ln -s "$SELF_SOURCE" "$target_path"
+    fi
+    ((LINKED_COUNT += 1))
+  fi
+fi
+
+if ((DRY_RUN)); then
+  echo "Dry run only. No files changed."
+else
+  echo "Done. Linked $LINKED_COUNT path(s), skipped $SKIPPED_COUNT already-linked path(s)."
+fi

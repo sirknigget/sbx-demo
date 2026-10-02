@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+
+# Removes Docker containers and images from the sandbox daemon.
+# Can also remove unused build cache and volumes after separate confirmation.
+
+set -euo pipefail
+
+DRY_RUN=false
+CONFIRM=false
+PRUNE_DOCKER_BUILD_CACHE=false
+PRUNE_DOCKER_VOLUMES=false
+DOCKER_CONTAINER_COUNT=0
+DOCKER_IMAGE_COUNT=0
+DOCKER_IMAGES_ESTIMATED=0B
+DOCKER_CONTAINERS_ESTIMATED=0B
+DOCKER_TOTAL_ESTIMATED=0B
+DOCKER_TOTAL_ESTIMATED_BYTES=0
+
+usage() {
+  cat <<'EOF'
+Usage: clear_docker [--dry-run] [--confirm]
+
+Stop and remove Docker containers and images. Interactive runs can also remove unused build cache and volumes.
+EOF
+}
+
+confirm() {
+  local msg="$1"
+  read -r -p "$msg [y/N] " answer
+  [[ "${answer,,}" == "y" ]]
+}
+
+docker_ready() {
+  command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1
+}
+
+size_to_bytes() {
+  local size="$1"
+  local normalized
+
+  if [[ "$size" == "0B" ]]; then
+    echo 0
+    return
+  fi
+
+  normalized="${size%B}"
+  numfmt --from=si "$normalized"
+}
+
+humanize_bytes() {
+  numfmt --to=iec-i --suffix=B "$1"
+}
+
+load_docker_stats() {
+  local docker_df
+
+  DOCKER_CONTAINER_COUNT=$(docker ps -aq | wc -l | tr -d ' ')
+  DOCKER_IMAGE_COUNT=$(docker image ls -aq --no-trunc | sort -u | wc -l | tr -d ' ')
+  docker_df=$(docker system df)
+  DOCKER_IMAGES_ESTIMATED=$(awk '$1=="Images"{print $4}' <<<"$docker_df")
+  DOCKER_CONTAINERS_ESTIMATED=$(awk '$1=="Containers"{print $4}' <<<"$docker_df")
+  DOCKER_IMAGES_ESTIMATED=${DOCKER_IMAGES_ESTIMATED:-0B}
+  DOCKER_CONTAINERS_ESTIMATED=${DOCKER_CONTAINERS_ESTIMATED:-0B}
+  DOCKER_TOTAL_ESTIMATED_BYTES="$(($(size_to_bytes "$DOCKER_IMAGES_ESTIMATED") + $(size_to_bytes "$DOCKER_CONTAINERS_ESTIMATED")))"
+  DOCKER_TOTAL_ESTIMATED=$(humanize_bytes "$DOCKER_TOTAL_ESTIMATED_BYTES")
+}
+
+print_summary() {
+  echo "Docker containers/images: $DOCKER_CONTAINER_COUNT container(s), $DOCKER_IMAGE_COUNT image(s), ~$DOCKER_TOTAL_ESTIMATED estimated (build cache and volumes excluded)"
+}
+
+# Removes the Docker resources that the user selected.
+prune_selected_resources() {
+  if $PRUNE_DOCKER_BUILD_CACHE; then
+    docker builder prune --all --force
+  fi
+  if $PRUNE_DOCKER_VOLUMES; then
+    docker volume prune --all --force
+  fi
+}
+
+# Reads cleanup flags and rejects unknown options.
+parse_arguments() {
+  while (($# > 0)); do
+    case "$1" in
+    --dry-run)
+      DRY_RUN=true
+      ;;
+    --confirm)
+      CONFIRM=true
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    esac
+    shift
+  done
+}
+
+# Requests consent for the default cleanup and optional resources.
+# Skips all prompts for dry runs and confirmed runs.
+request_cleanup_choices() {
+  if $DRY_RUN || $CONFIRM; then
+    return
+  fi
+
+  if ((DOCKER_CONTAINER_COUNT > 0 || DOCKER_IMAGE_COUNT > 0)); then
+    confirm "Proceed with clearing Docker containers and images? Estimated freed space: $DOCKER_TOTAL_ESTIMATED" || {
+      echo "Aborted."
+      exit 0
+    }
+  fi
+  if confirm "Also clear all unused Docker build cache?"; then
+    PRUNE_DOCKER_BUILD_CACHE=true
+  fi
+  if confirm "Also clear all unused Docker volumes?"; then
+    PRUNE_DOCKER_VOLUMES=true
+  fi
+  echo ""
+}
+
+# Reports an empty cleanup when no Docker resources were selected.
+# Returns failure when container, image, or optional cleanup is needed.
+finish_when_empty() {
+  if ((DOCKER_CONTAINER_COUNT != 0 || DOCKER_IMAGE_COUNT != 0)) ||
+    $PRUNE_DOCKER_BUILD_CACHE || $PRUNE_DOCKER_VOLUMES; then
+    return 1
+  fi
+
+  echo "=== Clearing Docker ==="
+  echo "  skip  Docker containers/images (nothing to remove)"
+  echo ""
+  echo "=== Done ==="
+  if $DRY_RUN; then
+    echo "Estimated total freed: $(humanize_bytes "$DOCKER_TOTAL_ESTIMATED_BYTES")"
+  else
+    echo "Remaining Docker usage:"
+    docker system df
+  fi
+}
+
+# Stops running containers and removes all containers in the daemon.
+remove_containers() {
+  if ((${#running_containers[@]} > 0)); then
+    docker stop "${running_containers[@]}" >/dev/null
+    echo "  stopped  ${#running_containers[@]} running Docker container(s)"
+  else
+    echo "  skip  Docker containers (none running)"
+  fi
+
+  if ((${#containers[@]} > 0)); then
+    docker rm -f "${containers[@]}" >/dev/null
+    echo "  removed  ${#containers[@]} Docker container(s)"
+  else
+    echo "  skip  Docker containers (none to remove)"
+  fi
+}
+
+# Removes each unique Docker image in the daemon.
+remove_images() {
+  if ((${#images[@]} > 0)); then
+    docker rmi -f "${images[@]}" >/dev/null
+    echo "  removed  ${#images[@]} Docker image(s) (~$DOCKER_TOTAL_ESTIMATED estimated freed)"
+  else
+    echo "  skip  Docker images (none to remove)"
+  fi
+}
+
+# Shows the planned container and image cleanup without changing Docker.
+preview_cleanup() {
+  echo "  would stop/remove  ${#containers[@]} Docker container(s) and ${#images[@]} image(s) (volumes kept, ~$DOCKER_TOTAL_ESTIMATED estimated)"
+  echo ""
+  echo "=== Done ==="
+  echo "Estimated total freed: $(humanize_bytes "$DOCKER_TOTAL_ESTIMATED_BYTES")"
+}
+
+# Clears selected Docker resources and reports the remaining usage.
+clear_selected_resources() {
+  local -a containers running_containers images
+
+  mapfile -t containers < <(docker ps -aq)
+  mapfile -t running_containers < <(docker ps -q)
+  mapfile -t images < <(docker image ls -aq --no-trunc | sort -u)
+
+  echo "=== Clearing Docker ==="
+  if $DRY_RUN; then
+    preview_cleanup
+    return
+  fi
+
+  remove_containers
+  remove_images
+  prune_selected_resources
+
+  echo ""
+  echo "=== Done ==="
+  echo "Remaining Docker usage:"
+  docker system df
+}
+
+# Checks Docker, gathers usage, and performs the selected cleanup.
+main() {
+  parse_arguments "$@"
+
+  if ! docker_ready; then
+    echo "  skip  Docker containers/images (docker unavailable or daemon inaccessible)"
+    return
+  fi
+
+  load_docker_stats
+
+  echo ""
+  echo "=== Docker usage before cleanup ==="
+  print_summary
+  echo ""
+
+  request_cleanup_choices
+  if finish_when_empty; then
+    return
+  fi
+
+  clear_selected_resources
+}
+
+main "$@"

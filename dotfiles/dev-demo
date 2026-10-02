@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# Opens the named sandbox from the current workspace directory.
+# Runs OMP, Pi, Codex, Claude Code, or an interactive Bash shell on the host.
+
+# Reads the mount path selected on the host; it can contain other projects.
+WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
+
+# Prints the supported host commands without starting the sandbox.
+usage() {
+  cat <<'EOF'
+Usage: dev-demo [omp|pi|bash|codex|claude|--help]
+
+Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
+Run OMP (default), Pi, Bash, Codex, or Claude Code from any directory inside the mount.
+The sandbox opens in the same workspace-relative directory.
+EOF
+}
+
+case "${1:-omp}" in
+  --help|-h|help)
+    usage
+    exit 0
+    ;;
+  omp|pi|bash|codex|claude)
+    command="${1:-omp}"
+    ;;
+  *)
+    usage >&2
+    exit 1
+    ;;
+esac
+if (( $# > 1 )); then
+  usage >&2
+  exit 1
+fi
+
+if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
+  printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
+  exit 2
+fi
+WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
+
+current_dir="$(pwd -P)"
+if [[ "$current_dir" == "$WORKSPACE_ROOT" ]]; then
+  relative_dir=.
+elif [[ "$current_dir" == "$WORKSPACE_ROOT/"* ]]; then
+  relative_dir="${current_dir#$WORKSPACE_ROOT/}"
+else
+  printf '%s\n' "Error: Current directory is not inside $WORKSPACE_ROOT" >&2
+  exit 1
+fi
+
+if [[ "$command" == bash ]]; then
+  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
+fi
+if [[ "$command" == pi ]]; then command=pi-managed; fi
+if [[ "$command" == codex || "$command" == claude || "$command" == pi-managed ]]; then
+  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc 'exec "$1"' bash "$command"
+fi
+exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
+  exec omp-managed
+'

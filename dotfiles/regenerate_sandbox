@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+
+# Builds a v3 demo kit on the host and saves a timestamped template backup.
+# Optionally transfers agent state from an existing sandbox before linking home.
+# Creates sbx-demo with the selected shared workspace mounted without VirtioFS cache.
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "$0")" && pwd -P)
+
+# Reports missing inputs and failed prerequisites before the build starts.
+die() {
+  printf 'Error: %s\n' "$*" >&2
+  exit 1
+}
+
+# Lists the supported inputs to this host command.
+usage() {
+  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n'
+}
+
+# Checks the sandbox names through sbx rather than probing the Docker daemon.
+sandbox_exists() {
+  sbx ls --quiet | grep -Fxq "$1"
+}
+
+# Runs a mounted script in the sandbox login environment.
+# Expands the positional arguments inside the sandbox.
+run_copy_state() {
+  local sandbox_name=$1 mode=$2
+  sbx exec "$sandbox_name" bash -lc "\"\$1\" \"\$2\"" bash "$mounted/copy-state.sh" "$mode"
+}
+
+# Reads an explicit shared mount path and an optional old sandbox name.
+parse_args() {
+  workspace=''
+  old_name=''
+  while (($#)); do
+    case "$1" in
+    --workspace-mount | --old-name)
+      (($# >= 2)) && [[ -n "$2" ]] || die "$1 requires a value"
+      if [[ "$1" == --workspace-mount ]]; then workspace=$2; else old_name=$2; fi
+      shift 2
+      ;;
+    --help | -h)
+      usage
+      exit 0
+      ;;
+    *) die "unknown option: $1" ;;
+    esac
+  done
+}
+
+# Checks the mount, required tools, and sandbox names before building.
+check_inputs() {
+  [[ "$workspace" == /* ]] || die '--workspace-mount must be an absolute directory'
+  [[ -d "$workspace" ]] || die "workspace directory not found: $workspace"
+  [[ "$old_name" != sbx-demo ]] || die 'old and new sandbox names must differ'
+  local command
+  for command in docker sbx; do
+    command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
+  done
+}
+
+# Resolves the demo paths inside the same mounted workspace on both sides.
+resolve_mount() {
+  local relative
+  workspace=$(cd -- "$workspace" && pwd -P)
+  case "$script_dir" in
+  "$workspace"/*) relative=${script_dir#"$workspace"/} ;;
+  *) die "dotfiles directory is not inside workspace mount: $workspace" ;;
+  esac
+  mounted="$workspace/$relative"
+  [[ -f "$script_dir/sbx-demo.yaml" && -f "$script_dir/Dockerfile" && -f "$script_dir/copy-state.sh" && -d "$script_dir/home" ]] || die 'demo files are missing'
+}
+
+# Checks that the new name is free and the optional old name exists.
+check_sandbox_names() {
+  if sandbox_exists sbx-demo; then die 'sandbox already exists: sbx-demo'; fi
+  if [[ -n "$old_name" ]] && ! sandbox_exists "$old_name"; then die "old sandbox not found: $old_name"; fi
+}
+
+# Selects a timestamped backup name before the v3 source build.
+prepare_backup() {
+  local timestamp backup_dir
+  timestamp=$(date '+%Y-%m-%d_%H-%M-%S')
+  image_tag="sbx-demo:local-$timestamp"
+  backup_dir="$HOME/agent-sandbox-backup"
+  archive="$backup_dir/sbx-demo__local_$timestamp.tar"
+  mkdir -p -- "$backup_dir"
+  # v3 builds export OCI artifacts, which require a docker-container builder.
+  # Select it only for this command; preserve the host's default builder.
+  if ! docker buildx inspect sbx-demo-kit >/dev/null 2>&1; then
+    docker buildx create --name sbx-demo-kit --driver docker-container
+  fi
+}
+
+# Transfers only the agent state supported by this demo.
+create_and_transfer() {
+  if [[ -n "$old_name" ]]; then
+    sbx exec "$old_name" bash -lc "test -f \"\$1\"" bash "$mounted/copy-state.sh"
+    run_copy_state "$old_name" export
+  fi
+  # sbx builds the v3 descriptor and its Dockerfile, then applies both providers.
+  # Repo-owned skills must not overlap Docker's shared skills mount.
+  env BUILDX_BUILDER=sbx-demo-kit DOCKER_SANDBOXES_ENABLE_VIRTIOFS_CACHE=0 sbx create --name sbx-demo --skills off "$script_dir" "$workspace"
+  # Store the selected mount in a sandbox-local environment file before the backup.
+  # The inner shell expands its positional argument and home directory.
+  # shellcheck disable=SC2016
+  sbx exec sbx-demo bash -c \
+    'printf "export MOUNTED_WORKSPACE=%q\n" "$1" > "$HOME/.config/sbx-demo/persistent-env.sh"' \
+    bash "$workspace"
+  # Save the fresh environment before importing private agent state.
+  sbx stop sbx-demo
+  sbx template save sbx-demo "$image_tag" --output "$archive"
+  sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
+  if [[ -n "$old_name" ]]; then run_copy_state sbx-demo import; fi
+}
+
+# Relinks tracked files and checks only tools installed by this example image.
+link_and_report() {
+  sbx exec sbx-demo bash -lc "link-tracked-home \"\$1\"" bash "$mounted/home"
+  sbx exec sbx-demo bash -lc 'configure-provider-auth'
+  sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version && pi --version'
+  # Exercise the same managed credential used by dev-demo, without tool access.
+  # The sandbox shell evaluates its provider environment after creation.
+  # shellcheck disable=SC2016
+  sbx exec sbx-demo bash -lc '
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == none ]]; then
+      printf "OpenAI inference check skipped: no host OpenAI login is stored.\n"
+      printf "Anthropic authentication is reported below; no paid Anthropic request is made.\n"
+      exit 0
+    fi
+    result=$(omp-managed \
+      --no-tools --no-session --no-extensions --no-skills --no-title \
+      --max-time 60s -p "Reply with exactly SBX_PROVIDER_AUTH_OK." </dev/null) || exit $?
+    printf "%s\n" "$result"
+    [[ "$result" == SBX_PROVIDER_AUTH_OK ]]
+  '
+  # The sandbox shell evaluates its provider environment after creation.
+  # shellcheck disable=SC2016
+  sbx exec -w /tmp sbx-demo bash -lc '
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == oauth ]]; then
+      result=$(timeout 90s codex exec --skip-git-repo-check --ephemeral \
+        -m gpt-6-sol -c model_reasoning_effort="low" \
+        "Reply with exactly SBX_CODEX_AUTH_OK. Do not use tools." </dev/null) || exit $?
+      printf "%s\n" "$result"
+      [[ "$result" == SBX_CODEX_AUTH_OK ]]
+    fi
+  '
+  # The sandbox shell evaluates its provider environment after creation.
+  # shellcheck disable=SC2016
+  sbx exec -w /tmp sbx-demo bash -lc '
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" != none ]]; then
+      result=$(timeout 90s pi-managed --no-tools --no-session --no-extensions \
+        --no-skills --no-context-files --thinking low \
+        -p "Reply with exactly SBX_PI_AUTH_OK." </dev/null) || exit $?
+      printf "%s\n" "$result"
+      [[ "$result" == SBX_PI_AUTH_OK ]]
+    fi
+  '
+  # The sandbox shell evaluates its provider environment after creation.
+  # shellcheck disable=SC2016
+  sbx exec sbx-demo bash -lc '
+    printf "OpenAI mode: %s\nAnthropic mode: %s\n" "${SBX_CRED_OPENAI_MODE:-none}" "${SBX_CRED_ANTHROPIC_MODE:-none}"
+    codex login status || true
+    if [[ "${SBX_CRED_OPENAI_MODE:-none}" == oauth ]]; then
+      printf "Codex uses host-managed OAuth through the proxy; the CLI labels its placeholder as an API key.\n"
+    fi
+    claude auth status || true
+  '
+  printf '\nDone.\n- New sandbox: sbx-demo\n- Template tag: %s\n- Template backup: %s\n- Workspace mount: %s\n- State migration: %s\n' "$image_tag" "$archive" "$workspace" "${old_name:-skipped}"
+  if [[ -n "$old_name" ]]; then
+    printf 'Private agent state may remain in %s/staging/. Review and remove it after the transfer.\n' "$script_dir"
+  fi
+}
+
+# Runs the host flow only after the input checks pass.
+parse_args "$@"
+check_inputs
+resolve_mount
+check_sandbox_names
+prepare_backup
+create_and_transfer
+link_and_report

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Full permissions inside Docker; provider settings remain a private runtime overlay.
+set -euo pipefail
+if [[ "${SBX_CRED_ANTHROPIC_MODE:-none}" != none ]]; then
+  set -- --settings "$HOME/.config/sbx-demo/claude-provider.json" "$@"
+fi
+exec "${NPM_CONFIG_PREFIX:-/usr/local/share/npm-global}/bin/claude" \
+  --dangerously-skip-permissions "$@"

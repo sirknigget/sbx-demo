@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# Runtime overrides keep migrated OMP logins from shadowing the host's credentials.
+set -euo pipefail
+set -- --approval-mode yolo "$@"
+case "${SBX_CRED_OPENAI_MODE:-none}" in
+  oauth)
+    exec omp --config "$HOME/.config/sbx-demo/providers.yml" --provider openai-codex --api-key oai-oat01-proxy-managed "$@"
+    ;;
+  apikey)
+    exec omp --config "$HOME/.config/sbx-demo/providers.yml" --provider openai --model openai/gpt-6-sol --api-key proxy-managed "$@"
+    ;;
+esac
+case "${SBX_CRED_ANTHROPIC_MODE:-none}" in
+  oauth|apikey)
+    if [[ "$SBX_CRED_ANTHROPIC_MODE" == oauth ]]; then
+      key=sk-ant-oat01-proxy-managed
+    else
+      key=proxy-managed
+    fi
+    exec omp --provider anthropic --api-key "$key" \
+      --model anthropic/claude-sonnet-4-6 \
+      --config "$HOME/.config/sbx-demo/providers.yml" "$@"
+    ;;
+esac
+# Preserve OMP's own login flow when neither host provider is configured.
+exec omp "$@"
