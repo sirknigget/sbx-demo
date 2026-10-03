@@ -1,0 +1,1 @@
+cua-computer-server[vnc]==0.3.46

@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!cua-requirements.txt
+!runtime/
+!runtime/**

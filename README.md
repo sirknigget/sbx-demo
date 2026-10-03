@@ -165,6 +165,12 @@ The [dotfiles subproject](dotfiles/README.md) shows a more advanced setup for a 
 This is a miniature example of my own environment, for demo purposes.
 Its guide covers the sandbox setup and how to use it. You can ask your agent to follow it for you - or follow it by yourself.
 
+## Codex Ubuntu desktop
+
+The [desktop subproject](desktop/README.md) shows Codex using an Ubuntu desktop inside a Docker Sandbox.
+Watch it use Chromium, click, and type through a live viewer in your browser.
+Its guide covers the setup, the included demo, and how to give Codex your own desktop tasks.
+
 
 
 ### Read about all the available features at https://docs.docker.com/ai/sandboxes/

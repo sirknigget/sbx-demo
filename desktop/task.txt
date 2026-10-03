@@ -1,0 +1,9 @@
+Use the desktop MCP tools (Cua Computer Server) to complete this browser task
+while the human watches the same desktop live in noVNC. Begin with
+computer_screenshot. In the visible Chromium
+browser, navigate to http://127.0.0.1:8081 using the address bar. In the Message
+field, type exactly "Hello from Codex" and click "Save message". Take another
+screenshot and confirm that the page displays "Saved: Hello from Codex".
+Use only desktop computer_screenshot/mouse/keyboard tools to complete and verify this
+task. Do not use shell commands, HTTP requests, DOM access, Playwright automation,
+or edit the fixture/result files. Finish with a short description of what you saw.

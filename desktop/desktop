@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Run from any directory. All host writes and mounts stay under desktop/.
+set -euo pipefail
+desktop_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+sandbox_name=${DESKTOP_SANDBOX_NAME:-codex-ubuntu-desktop-demo}
+image_tag=docker.io/sbx-demo/codex-desktop:v1
+viewer_port=${DESKTOP_VIEWER_PORT:-6080}
+viewer_url="http://127.0.0.1:${viewer_port}/vnc.html?autoconnect=1&resize=scale&view_only=1"
+[[ "$sandbox_name" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]+$ ]] || {
+  printf 'Invalid sandbox name\n' >&2
+  exit 1
+}
+
+ensure_keeper() {
+  python3 "$desktop_dir/host-keepalive.py" start "$sandbox_name"
+  # Wait for an actual exec session before examining active port bindings.
+  sbx exec "$sandbox_name" true
+}
+
+ensure_viewer() {
+  local bindings
+  ensure_keeper
+  bindings=$(sbx ports "$sandbox_name" --json)
+  if ! python3 -c 'import json,sys; ports=json.load(sys.stdin); sys.exit(0 if any(p.get("host_ip")=="127.0.0.1" and p.get("host_port")==int(sys.argv[1]) and p.get("sandbox_port")==6080 for p in ports) else 1)' "$viewer_port" <<<"$bindings"; then
+    sbx ports "$sandbox_name" --publish "127.0.0.1:${viewer_port}:6080"
+  fi
+}
+
+case "${1:-help}" in
+build)
+  sbx kit validate "$desktop_dir/kit"
+  # Resolve outside Docker's layer cache so every build checks for updates.
+  codex_version=$(
+    python3 - <<'PY'
+import json
+import re
+import urllib.request
+
+with urllib.request.urlopen("https://registry.npmjs.org/@openai%2Fcodex/latest", timeout=30) as response:
+    version = json.load(response)["version"]
+if not re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?", version):
+    raise SystemExit("The npm registry returned an invalid Codex version")
+print(version)
+PY
+  )
+  printf 'Installing latest Codex CLI and app server: %s\n' "$codex_version"
+  docker build --build-arg "CODEX_VERSION=$codex_version" -t "$image_tag" "$desktop_dir"
+  image_archive=$(mktemp "${TMPDIR:-/tmp}/codex-desktop.XXXXXX")
+  trap 'rm -f -- "$image_archive"' EXIT
+  docker image save -o "$image_archive" "$image_tag"
+  # Docker Desktop and sbx have separate image stores.
+  sbx template load "$image_archive"
+  ;;
+create)
+  sbx create --name "$sandbox_name" --pull never --skills off \
+    --memory 4g --cpus 2 \
+    --template "$image_tag" "$desktop_dir/kit" "$desktop_dir"
+  # A port mapping wakes a stopped sandbox and the kit starts the desktop.
+  ensure_viewer
+  sbx exec "$sandbox_name" /opt/desktop/venv/bin/python /opt/desktop/ready.py
+  printf 'Live viewer: %s\n' "$viewer_url"
+  ;;
+watch)
+  ensure_viewer
+  sbx exec "$sandbox_name" /opt/desktop/venv/bin/python /opt/desktop/ready.py
+  printf '%s\n' "$viewer_url"
+  if [[ "${DESKTOP_OPEN_BROWSER:-1}" == 0 ]]; then
+    exit 0
+  elif command -v open >/dev/null 2>&1; then
+    open "$viewer_url"
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$viewer_url"
+  fi
+  ;;
+run)
+  shift
+  ensure_viewer
+  sbx exec "$sandbox_name" /opt/desktop/venv/bin/python /opt/desktop/ready.py
+  sbx exec -it "$sandbox_name" codex --dangerously-bypass-approvals-and-sandbox "$@"
+  ;;
+demo)
+  mkdir -p "$desktop_dir/.results"
+  ensure_viewer
+  sbx exec "$sandbox_name" /opt/desktop/venv/bin/python /opt/desktop/ready.py
+  # Remove only the previous fixture result, so a stale success cannot pass.
+  sbx exec "$sandbox_name" rm -f /home/agent/.local/state/desktop/result.json
+  sbx exec "$sandbox_name" codex exec --model gpt-6.1-sol --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check --json \
+    "$(cat "$desktop_dir/task.txt")" | tee "$desktop_dir/.results/agent.jsonl"
+  python3 "$desktop_dir/audit.py" "$desktop_dir/.results/agent.jsonl"
+  sbx exec "$sandbox_name" /opt/desktop/venv/bin/python /opt/desktop/verify.py
+  sbx cp "$sandbox_name:/home/agent/.local/state/desktop/result.json" "$desktop_dir/.results/result.json"
+  sbx cp "$sandbox_name:/home/agent/.local/state/desktop/verified.png" "$desktop_dir/.results/verified.png"
+  ;;
+status)
+  sbx ports "$sandbox_name"
+  sbx exec "$sandbox_name" bash -lc 'for f in /home/agent/.local/state/desktop/*.log; do printf "\n%s\n" "$f"; tail -n 8 "$f"; done'
+  ;;
+stop)
+  python3 "$desktop_dir/host-keepalive.py" stop "$sandbox_name"
+  sbx stop "$sandbox_name"
+  ;;
+*)
+  printf 'Usage: %s {build|create|watch|run [PROMPT]|demo|status|stop}\n' "$0"
+  ;;
+esac
