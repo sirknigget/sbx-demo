@@ -88,6 +88,7 @@ The app has a sidebar with three sections: File Browser, Docker Browser, and Cod
 - allow viewing Docker containers and their logs. When viewing a container, poll logs every second.
 - allow dispatching single-prompt tasks to Codex on this machine - show the task status and textual output in real-time in a scrollable area.
 Task dispatching should support picking a working dir for codex. Task dispatching must invoke Codex with full, unrestricted permissions - no sandboxing.
+Task dispatching must use gpt-6-sol on medium effort for the model.
 
 The app backend and frontend should be served on port 3000, and kept open when this task is done.
 
