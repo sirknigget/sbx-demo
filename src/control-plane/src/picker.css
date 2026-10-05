@@ -1,0 +1,109 @@
+.pick-button {
+  border: 0;
+  border-left: 1px solid #e7e9ef;
+  background: #f7f6ff;
+  color: #7468d9;
+  height: 100%;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 800;
+}
+.pick-button:hover {
+  background: #ebe8ff;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #141b2b88;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.directory-modal {
+  width: min(480px, 100%);
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 13px;
+  box-shadow: 0 25px 80px #0b102850;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 21px 22px 17px;
+  border-bottom: 1px solid #e9ecf2;
+}
+.modal-header h2 {
+  font:
+    800 16px Manrope,
+    sans-serif;
+  margin: 0;
+  color: #273047;
+}
+.modal-header p {
+  font-size: 11px;
+  color: #9aa3b0;
+  margin: 6px 0 0;
+}
+.picker-path {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 16px 20px 10px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #f6f5ff;
+  color: #7266d7;
+  font: 11px monospace;
+  overflow: auto;
+  white-space: nowrap;
+}
+.picker-list {
+  overflow: auto;
+  min-height: 150px;
+  padding: 0 12px 12px;
+}
+.picker-list button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  border: 0;
+  background: white;
+  border-bottom: 1px solid #eff1f5;
+  padding: 12px 10px;
+  text-align: left;
+  color: #42506a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.picker-list button:hover {
+  background: #fafaff;
+}
+.picker-list button svg:first-child {
+  color: #8679eb;
+}
+.picker-list button svg:last-child {
+  margin-left: auto;
+  color: #aab4c3;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid #e9ecf2;
+  padding: 15px 20px;
+}
+.modal-actions .outline-button,
+.modal-actions .primary-button {
+  height: 36px;
+  padding: 0 15px;
+}
+.modal-actions .primary-button svg {
+  margin: 0;
+}
