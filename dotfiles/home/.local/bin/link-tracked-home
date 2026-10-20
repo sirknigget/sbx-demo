@@ -22,12 +22,23 @@ SKIPPED_COUNT=0
 # Link repo assets once, then point Claude's skills at their canonical source.
 DIRECTORY_LINKS=(
   ".agents"
+  ".claude/agents"
+  ".claude/rules"
   # Codex requires regular agent files; link their parent directory instead.
   ".codex/agents"
+  ".codex/rules"
+  ".pi/agent/extensions"
+  ".pi/agent/prompts"
+  ".pi/agent/themes"
   ".omp/agent/agents"
+  ".omp/agent/commands"
   ".omp/agent/extensions"
+  ".omp/agent/hooks"
+  ".omp/agent/instructions"
+  ".omp/agent/prompts"
   ".omp/agent/rules"
   ".omp/agent/themes"
+  ".omp/agent/tools"
 )
 
 while [[ $# -gt 0 ]]; do
@@ -168,8 +179,6 @@ done < <(find "$SOURCE_DIR" \( -type f -o -type l \) -print0 | sort -z)
 if [[ -d "$SOURCE_DIR/.agents/skills" ]]; then
   if ((!DRY_RUN)); then mkdir -p "$HOME/.claude"; fi
   link_compatibility_path '.claude/skills' '../.agents/skills'
-  if ((!DRY_RUN)); then mkdir -p "$HOME/.pi/agent"; fi
-  link_compatibility_path '.pi/agent/skills' '../../.agents/skills'
 fi
 
 if [[ -n "$SELF_SOURCE" ]]; then

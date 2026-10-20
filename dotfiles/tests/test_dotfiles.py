@@ -142,6 +142,51 @@ class DotfilesTests(unittest.TestCase):
             if mode == "oauth":
                 self.assertIn("openai-codex", output)
 
+    def test_fresh_sandbox_links_agent_authored_directories_to_checkout(self):
+        source = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", source)
+        directories = (
+            ".agents",
+            ".claude/agents",
+            ".claude/rules",
+            ".codex/agents",
+            ".codex/rules",
+            ".pi/agent/extensions",
+            ".pi/agent/prompts",
+            ".pi/agent/themes",
+            ".omp/agent/agents",
+            ".omp/agent/commands",
+            ".omp/agent/extensions",
+            ".omp/agent/hooks",
+            ".omp/agent/instructions",
+            ".omp/agent/prompts",
+            ".omp/agent/rules",
+            ".omp/agent/themes",
+            ".omp/agent/tools",
+        )
+        self.assertTrue((source / ".pi/agent/extensions/.gitkeep").is_file())
+        auth = self.home / ".pi/agent/auth.json"
+        auth.write_text("private sandbox state")
+
+        self.run_script("bash", BIN / "link-tracked-home", str(source))
+        for relative in directories:
+            with self.subTest(path=relative):
+                linked = self.home / relative
+                tracked = source / relative
+                self.assertTrue(linked.is_symlink())
+                self.assertEqual(linked.resolve(), tracked.resolve())
+                (linked / "created.example").write_text(relative)
+                self.assertEqual((tracked / "created.example").read_text(), relative)
+        self.assertFalse((self.home / ".pi/agent/skills").exists())
+        self.assertEqual(
+            (self.home / ".claude/skills").resolve(),
+            (source / ".agents/skills").resolve(),
+        )
+        self.assertEqual(auth.read_text(), "private sandbox state")
+        self.run_script("bash", BIN / "link-tracked-home", str(source))
+        for relative in directories:
+            self.assertTrue((self.home / relative).is_symlink())
+
     def test_full_permission_launchers(self):
         for mode in ("none", "oauth", "apikey"):
             env = {
@@ -249,9 +294,11 @@ class DotfilesTests(unittest.TestCase):
             restore = next(
                 i for i, line in enumerate(calls) if "copy-state.sh import" in line
             )
+            link = next(i for i, line in enumerate(calls) if "link-tracked-home" in line)
             self.assertLess(export, create)
             self.assertLess(create, backup)
-            self.assertLess(backup, restore)
+            self.assertLess(backup, link)
+            self.assertLess(link, restore)
             # The same file can hold more than the mount path.
             env_path = self.home / ".config/sbx-demo/persistent-env.sh"
             with env_path.open("a") as env_file:
@@ -346,10 +393,14 @@ class DotfilesTests(unittest.TestCase):
             self.addCleanup(connection.close)
         for relative in (
             ".omp/.env",
+            ".codex/config.toml",
             ".codex/sessions/session.jsonl",
+            ".claude/settings.json",
             ".claude/projects/session.jsonl",
             ".claude.json",
             ".pi/agent/auth.json",
+            ".pi/agent/settings.json",
+            ".pi/agent/extensions/weather.ts",
             ".pi/agent/sessions/session.jsonl",
         ):
             path = source / relative
@@ -362,7 +413,18 @@ class DotfilesTests(unittest.TestCase):
         stale.write_text("old")
         state.transfer("export", source, staging)
         self.assertFalse(stale.exists())
+        self.assertTrue((staging / ".pi/agent/extensions/weather.ts").is_file())
+        tracked_home = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", tracked_home)
+        tracked_config = (tracked_home / ".codex/config.toml").read_bytes()
         destination.mkdir()
+        with self.assertRaisesRegex(RuntimeError, "Link tracked home"):
+            state.transfer("import", destination, staging)
+        self.run_script(
+            "bash", BIN / "link-tracked-home", str(tracked_home),
+            env={**self.env, "HOME": str(destination)},
+        )
+        self.assertTrue((destination / ".local/bin/link-tracked-home").is_symlink())
         previous_path = os.environ["PATH"]
         os.environ["PATH"] = self.env["PATH"]
         try:
@@ -376,14 +438,20 @@ class DotfilesTests(unittest.TestCase):
             self.assertEqual(
                 (destination / ".pi/agent/auth.json").stat().st_mode & 0o777, 0o600
             )
+            self.assertEqual((tracked_home / ".codex/config.toml").read_bytes(), tracked_config)
+            self.assertTrue((destination / ".pi/agent/extensions").is_symlink())
+            self.assertFalse((tracked_home / ".pi/agent/extensions/weather.ts").exists())
+            self.assertNotEqual((destination / ".pi/agent/settings.json").read_text(), "fixture")
             self.stub("lsof", "printf '123\\n'")
             with self.assertRaisesRegex(RuntimeError, "Stop OMP"):
                 state.transfer("import", destination, staging)
             self.stub("lsof", "exit 1")
             (destination / ".claude.json").unlink()
             (destination / ".claude.json").symlink_to(self.home / ".gitconfig")
-            with self.assertRaisesRegex(RuntimeError, "symlink"):
-                state.transfer("import", destination, staging)
+            original_gitconfig = (self.home / ".gitconfig").read_bytes()
+            state.transfer("import", destination, staging)
+            self.assertTrue((destination / ".claude.json").is_symlink())
+            self.assertEqual((self.home / ".gitconfig").read_bytes(), original_gitconfig)
         finally:
             os.environ["PATH"] = previous_path
 

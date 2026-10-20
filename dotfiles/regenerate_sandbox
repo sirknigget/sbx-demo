@@ -140,12 +140,12 @@ create_and_transfer() {
   sbx stop sbx-demo
   sbx template save sbx-demo "$image_tag" --output "$archive"
   sbx exec sbx-demo bash -lc "test -f \"\$1\" && test -d \"\$2\"" bash "$mounted/copy-state.sh" "$mounted/home"
+  sbx exec sbx-demo bash -lc "link-tracked-home \"\$1\"" bash "$mounted/home"
   if [[ -n "$old_name" ]]; then run_copy_state sbx-demo import; fi
 }
 
-# Relinks tracked files and checks only tools installed by this example image.
+# Checks only tools installed by this example image.
 link_and_report() {
-  sbx exec sbx-demo bash -lc "link-tracked-home \"\$1\"" bash "$mounted/home"
   sbx exec sbx-demo bash -lc 'configure-provider-auth'
   sbx exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version && pi --version'
   # Exercise the same managed credential used by dev-demo, without tool access.

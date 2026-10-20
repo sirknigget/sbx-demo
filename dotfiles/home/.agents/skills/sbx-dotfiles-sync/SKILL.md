@@ -45,6 +45,10 @@ After making a non-excluded persistent change outside a project checkout:
    `Dockerfile`, runtime setup in the appropriate tracked scripts, and user settings in `home/`.
    Make the template reproduce the final installation or configuration, not a description of it.
    Do not copy credentials, private state, or generated files into the checkout.
+   For a new home path, check `home/.local/bin/link-tracked-home`: tracked files link individually,
+   but a directory that must capture future files needs an entry in `DIRECTORY_LINKS` and a
+   placeholder tracked by Git if it would otherwise be empty. Keep credential and state
+   directories out of these links.
 4. Run focused checks allowed inside the sandbox for the changed template path. Do not run host
    sandbox creation or image builds inside the sandbox. Leave the template changes uncommitted.
    Report the changed files and what you verified.
