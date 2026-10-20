@@ -63,3 +63,10 @@ Cloud cannot mount your host workspace. Setup builds the same kit for ARM64, the
 - `sbx-demo.yaml` declares network access and optional provider credentials. Docker manages real credentials outside tracked files. Check stored logins with `sbx secret ls` or `sbx --cloud secret ls`.
 - Local and cloud sandboxes have separate state, even though both are named `sbx-demo`. Creation refuses to replace an existing sandbox. A stopped sandbox resumes when you use the launcher; stop one with `sbx stop sbx-demo` or `sbx --cloud stop sbx-demo`.
 - Docker can run inside a cloud sandbox. Docker documents a [cloud limitation](https://docs.docker.com/ai/sandboxes/cloud/usage/#docker-exec-and-healthchecks) affecting `docker exec`, `docker compose exec`, and healthchecks; `docker run` starts the container's main process correctly.
+
+
+## Example pi prompt with installation + versioned extension creation:
+
+```
+Install this tool globally on this machine: https://snapcraft.io/wther, and then create a pi extension that displays compact weather information on the right half of the screen.
+```
