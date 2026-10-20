@@ -92,6 +92,39 @@ class DotfilesTests(unittest.TestCase):
                 )
             self.run_script(shell, ROOT / "regenerate_sandbox", "--help")
 
+    def test_cloud_host_commands(self):
+        self.stub("sbx", 'printf "%s\\n" "$*" >> "$HOME/sbx-calls"')
+        for shell in (shell for shell in ("bash", "zsh") if shutil.which(shell)):
+            log = self.home / "sbx-calls"
+            log.unlink(missing_ok=True)
+            self.run_script(shell, ROOT / "regenerate_sandbox", "--cloud")
+            calls = log.read_text().splitlines()
+            self.assertIn("--cloud ls --quiet", calls)
+            self.assertTrue(any("--cloud create --name sbx-demo --platform linux/arm64" in call for call in calls))
+            self.assertTrue(any("--cloud exec sbx-demo git clone https://github.com/" in call for call in calls))
+            self.assertTrue(any("--cloud exec sbx-demo bash -lc link-tracked-home" in call for call in calls))
+            log.unlink()
+            subprocess.run(
+                [shell, str(ROOT / "dev-demo"), "--cloud", "bash"],
+                env=self.env,
+                cwd=ROOT.parent,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn("--cloud exec -it -w /home/agent/workspace/sbx-demo/.", log.read_text())
+
+        self.stub("sbx", 'if [ "$*" = "--cloud ls --quiet" ]; then printf "dotfiles/sbx-demo\\n"; else printf "%s\\n" "$*" >> "$HOME/sbx-calls"; fi')
+        result = subprocess.run(
+            ["bash", str(ROOT / "regenerate_sandbox"), "--cloud"],
+            env=self.env,
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cloud sandbox already exists", result.stderr)
+
     def test_sandbox_commands(self):
         for script in [ROOT / "copy-state.sh", *BIN.iterdir()]:
             subprocess.run(["bash", "-n", str(script)], check=True)

@@ -15,7 +15,7 @@ die() {
 
 # Lists the supported inputs to this host command.
 usage() {
-  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n'
+  printf 'Usage: regenerate_sandbox --workspace-mount ABSOLUTE_PATH [--old-name NAME]\n       regenerate_sandbox --cloud\n'
 }
 
 # Checks the sandbox names through sbx rather than probing the Docker daemon.
@@ -34,8 +34,13 @@ run_copy_state() {
 parse_args() {
   workspace=''
   old_name=''
+  cloud=0
   while (($#)); do
     case "$1" in
+    --cloud)
+      cloud=1
+      shift
+      ;;
     --workspace-mount | --old-name)
       (($# >= 2)) && [[ -n "$2" ]] || die "$1 requires a value"
       if [[ "$1" == --workspace-mount ]]; then workspace=$2; else old_name=$2; fi
@@ -48,6 +53,28 @@ parse_args() {
     *) die "unknown option: $1" ;;
     esac
   done
+}
+
+# Cloud has no host mount. Build the same kit, then clone the checkout inside it.
+create_cloud() {
+  [[ -z "$workspace" && -z "$old_name" ]] || die '--cloud does not use --workspace-mount or --old-name'
+  local command repo_url cloud_home=/home/agent/workspace/sbx-demo
+  for command in docker git sbx; do
+    command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
+  done
+  repo_url=$(git -C "$script_dir/.." remote get-url origin)
+  [[ "$repo_url" == https://github.com/* ]] || die 'cloud clone requires an HTTPS GitHub origin'
+  if sbx --cloud ls --quiet | grep -Eq '(^|/)sbx-demo$'; then die 'cloud sandbox already exists: sbx-demo'; fi
+  if ! docker buildx inspect sbx-demo-kit >/dev/null 2>&1; then
+    docker buildx create --name sbx-demo-kit --driver docker-container
+  fi
+  env BUILDX_BUILDER=sbx-demo-kit sbx --cloud create --name sbx-demo --platform linux/arm64 \
+    --allow-network github.com:443 "$script_dir"
+  sbx --cloud exec sbx-demo mkdir -p /home/agent/workspace
+  sbx --cloud exec sbx-demo git clone "$repo_url" "$cloud_home"
+  sbx --cloud exec sbx-demo bash -lc 'link-tracked-home "$1" && configure-provider-auth' bash "$cloud_home/dotfiles/home"
+  sbx --cloud exec sbx-demo bash -lc 'node --version && bun --version && omp --version && codex --version && claude --version && pi --version'
+  printf '\nDone.\n- Cloud sandbox: sbx-demo\n- Cloned repo: %s\n- Cloud workspace: %s\n' "$repo_url" "$cloud_home"
 }
 
 # Checks the mount, required tools, and sandbox names before building.
@@ -176,6 +203,10 @@ link_and_report() {
 
 # Runs the host flow only after the input checks pass.
 parse_args "$@"
+if ((cloud)); then
+  create_cloud
+  exit 0
+fi
 check_inputs
 resolve_mount
 check_sandbox_names

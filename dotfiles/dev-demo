@@ -9,13 +9,20 @@ WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
 # Prints the supported host commands without starting the sandbox.
 usage() {
   cat <<'EOF'
-Usage: dev-demo [omp|pi|bash|codex|claude|--help]
+Usage: dev-demo [--cloud] [omp|pi|bash|codex|claude|--help]
 
 Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
 Run OMP (default), Pi, Bash, Codex, or Claude Code from any directory inside the mount.
 The sandbox opens in the same workspace-relative directory.
+For the cloud sandbox, use --cloud from the sbx-demo checkout.
 EOF
 }
+
+cloud=0
+if [[ "${1:-}" == --cloud ]]; then
+  cloud=1
+  shift
+fi
 
 case "${1:-omp}" in
   --help|-h|help)
@@ -35,29 +42,37 @@ if (( $# > 1 )); then
   exit 1
 fi
 
-if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
-  printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
-  exit 2
+sbx_flags=()
+if ((cloud)); then
+  local_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
+  WORKSPACE_ROOT=/home/agent/workspace/sbx-demo
+  sbx_flags=(--cloud)
+else
+  if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
+    printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
+    exit 2
+  fi
+  WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
+  local_root="$WORKSPACE_ROOT"
 fi
-WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
 
 current_dir="$(pwd -P)"
-if [[ "$current_dir" == "$WORKSPACE_ROOT" ]]; then
+if [[ "$current_dir" == "$local_root" ]]; then
   relative_dir=.
-elif [[ "$current_dir" == "$WORKSPACE_ROOT/"* ]]; then
-  relative_dir="${current_dir#$WORKSPACE_ROOT/}"
+elif [[ "$current_dir" == "$local_root/"* ]]; then
+  relative_dir="${current_dir#$local_root/}"
 else
-  printf '%s\n' "Error: Current directory is not inside $WORKSPACE_ROOT" >&2
+  printf '%s\n' "Error: Current directory is not inside $local_root" >&2
   exit 1
 fi
 
 if [[ "$command" == bash ]]; then
-  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
+  exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
 fi
 if [[ "$command" == pi ]]; then command=pi-managed; fi
 if [[ "$command" == codex || "$command" == claude || "$command" == pi-managed ]]; then
-  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc 'exec "$1"' bash "$command"
+  exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc 'exec "$1"' bash "$command"
 fi
-exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
+exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
   exec omp-managed
 '
