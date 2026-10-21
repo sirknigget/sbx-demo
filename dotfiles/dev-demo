@@ -14,7 +14,8 @@ Usage: dev-demo [--cloud] [omp|pi|bash|codex|claude|--help]
 Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
 Run OMP (default), Pi, Bash, Codex, or Claude Code from any directory inside the mount.
 The sandbox opens in the same workspace-relative directory.
-For the cloud sandbox, use --cloud from the sbx-demo checkout.
+For the cloud sandbox, use --cloud from anywhere. Inside the checkout, the
+relative directory is preserved; elsewhere, it starts at the cloud repo root.
 EOF
 }
 
@@ -44,7 +45,7 @@ fi
 
 sbx_flags=()
 if ((cloud)); then
-  local_root="$(cd -- "$(dirname -- "$0")/.." && pwd -P)"
+  local_root="$(cd -- "$(dirname -- "$(realpath "$0")")/.." && pwd -P)"
   WORKSPACE_ROOT=/home/agent/workspace/sbx-demo
   sbx_flags=(--cloud)
 else
@@ -62,8 +63,12 @@ if [[ "$current_dir" == "$local_root" ]]; then
 elif [[ "$current_dir" == "$local_root/"* ]]; then
   relative_dir="${current_dir#$local_root/}"
 else
-  printf '%s\n' "Error: Current directory is not inside $local_root" >&2
-  exit 1
+  if ((cloud)); then
+    relative_dir=.
+  else
+    printf '%s\n' "Error: Current directory is not inside $local_root" >&2
+    exit 1
+  fi
 fi
 
 if [[ "$command" == bash ]]; then

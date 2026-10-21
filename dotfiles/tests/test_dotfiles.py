@@ -101,6 +101,7 @@ class DotfilesTests(unittest.TestCase):
             calls = log.read_text().splitlines()
             self.assertIn("--cloud ls --quiet", calls)
             self.assertTrue(any("--cloud create --name sbx-demo --platform linux/arm64" in call for call in calls))
+            self.assertTrue(any("--allow-network ** " in call for call in calls))
             self.assertTrue(any("--cloud exec sbx-demo git clone https://github.com/" in call for call in calls))
             self.assertTrue(any("--cloud exec sbx-demo bash -lc link-tracked-home" in call for call in calls))
             log.unlink()
@@ -113,6 +114,35 @@ class DotfilesTests(unittest.TestCase):
                 check=True,
             )
             self.assertIn("--cloud exec -it -w /home/agent/workspace/sbx-demo/.", log.read_text())
+            launcher = self.root / "dev-demo"
+            launcher.symlink_to(ROOT / "dev-demo")
+            log.unlink()
+            subprocess.run(
+                [shell, str(launcher), "--cloud", "pi"],
+                env=self.env,
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn(
+                "--cloud exec -it -w /home/agent/workspace/sbx-demo/dotfiles sbx-demo",
+                log.read_text(),
+            )
+            log.unlink()
+            subprocess.run(
+                [shell, str(launcher), "--cloud", "pi"],
+                env=self.env,
+                cwd=self.root,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn(
+                "--cloud exec -it -w /home/agent/workspace/sbx-demo/. sbx-demo",
+                log.read_text(),
+            )
+            launcher.unlink()
 
         self.stub("sbx", 'if [ "$*" = "--cloud ls --quiet" ]; then printf "dotfiles/sbx-demo\\n"; else printf "%s\\n" "$*" >> "$HOME/sbx-calls"; fi')
         result = subprocess.run(

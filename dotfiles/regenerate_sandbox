@@ -69,7 +69,7 @@ create_cloud() {
     docker buildx create --name sbx-demo-kit --driver docker-container
   fi
   env BUILDX_BUILDER=sbx-demo-kit sbx --cloud create --name sbx-demo --platform linux/arm64 \
-    --allow-network github.com:443 "$script_dir"
+    --allow-network '**' "$script_dir"
   sbx --cloud exec sbx-demo mkdir -p /home/agent/workspace
   sbx --cloud exec sbx-demo git clone "$repo_url" "$cloud_home"
   sbx --cloud exec sbx-demo bash -lc 'link-tracked-home "$1" && configure-provider-auth' bash "$cloud_home/dotfiles/home"
