@@ -55,4 +55,4 @@ After making a non-excluded persistent change outside a project checkout:
 Before ending the turn, create a pull request in the `sbx-demo` repository for all tracked changes
 made to that repository during the turn, including tracked agent configuration changes that did not
 need a template sync. Update the current pull request instead if one already exists. Do not include
-unrelated changes that were present before the turn. Follow the `github-pr-workflow` skill.
+unrelated changes that were present before the turn.
