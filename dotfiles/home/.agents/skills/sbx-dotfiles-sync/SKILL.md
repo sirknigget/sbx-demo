@@ -1,7 +1,7 @@
 ---
 name: sbx-dotfiles-sync
 description:
-  Sync persistent non-agent sandbox, system, and user-environment changes into the uncommitted
+  Sync persistent non-agent sandbox, system, and user-environment changes into the
   sbx-demo/dotfiles template. Use only for changes outside project checkouts, such as OS/global
   packages, user-level tool installations or configuration, permissions, and helper scripts.
   Do not use for project-local work or changes limited to tracked agent configuration.
@@ -50,5 +50,9 @@ After making a non-excluded persistent change outside a project checkout:
    placeholder tracked by Git if it would otherwise be empty. Keep credential and state
    directories out of these links.
 4. Run focused checks allowed inside the sandbox for the changed template path. Do not run host
-   sandbox creation or image builds inside the sandbox. Leave the template changes uncommitted.
-   Report the changed files and what you verified.
+   sandbox creation or image builds inside the sandbox. Report the changed files and what you verified.
+
+Before ending the turn, create a pull request in the `sbx-demo` repository for all tracked changes
+made to that repository during the turn, including tracked agent configuration changes that did not
+need a template sync. Update the current pull request instead if one already exists. Do not include
+unrelated changes that were present before the turn. Follow the `github-pr-workflow` skill.
