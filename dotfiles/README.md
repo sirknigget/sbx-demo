@@ -29,10 +29,10 @@ Add the `PATH` export to `~/.zshrc` or `~/.bashrc` for new terminals. After crea
 3. Launch from the repository root:
 
    ```bash
-   ./dotfiles/dev-demo pi
+   dev-demo pi
    ```
 
-Use `./dotfiles/dev-demo` for OMP (the default), or replace `pi` with `codex`, `claude`, or `bash`. From another project, use the launcher's absolute path or its `PATH` command. Keep `SBX_DEMO_WORKSPACE` set in each host terminal.
+Use `dev-demo` for OMP (the default), or replace `pi` with `codex`, `claude`, or `bash`. From another project, use the launcher's absolute path or its `PATH` command. Keep `SBX_DEMO_WORKSPACE` set in each host terminal.
 
 The workspace is mounted into the sandbox. Edits on either side appear in the same files. Setup saves a clean local template under `~/agent-sandbox-backup/`. To move private agent state from an older sandbox with the same mount, add `--old-name NAME` when creating; review and remove private copies left in `dotfiles/staging/` afterward.
 
@@ -49,8 +49,8 @@ The workspace is mounted into the sandbox. Edits on either side appear in the sa
 3. From the repository root, build and launch:
 
    ```bash
-   ./dotfiles/regenerate_sandbox --cloud
-   ./dotfiles/dev-demo --cloud pi
+   ./regenerate_sandbox --cloud
+   dev-demo --cloud pi
    ```
 
 Use `--cloud` with the other launcher choices too, for example `./dotfiles/dev-demo --cloud bash`. Run it from this checkout or one of its subdirectories.
