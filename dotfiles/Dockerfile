@@ -39,17 +39,6 @@ RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-l
     && install -m 755 /tmp/bun-linux-aarch64/bun /usr/local/bin/bun \
     && rm -rf /tmp/bun.zip /tmp/bun-linux-aarch64
 
-# Build a pinned wego binary for the Open-Meteo Pi weather widget. Go is build-only.
-ARG GO_VERSION=1.27.3
-ARG GO_SHA256=a06e99309dbcbdca1a8ccd2282c3ee146e55930886e26b4f1193269587165f49
-ARG WEGO_VERSION=v0.0.0-20260926200706-14b1e3643bad
-RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz" -o /tmp/go.tar.gz \
-    && echo "${GO_SHA256}  /tmp/go.tar.gz" | sha256sum -c - \
-    && mkdir -p /tmp/wego-build \
-    && tar -xzf /tmp/go.tar.gz -C /tmp/wego-build \
-    && GOBIN=/usr/local/bin CGO_ENABLED=0 /tmp/wego-build/go/bin/go install "github.com/schachmat/wego@${WEGO_VERSION}" \
-    && rm -rf /tmp/wego-build /tmp/go.tar.gz /root/go
-
 # Installs OMP for the agent without placing login data in the image.
 USER agent
 RUN mkdir -p /home/agent/.local/bin \
