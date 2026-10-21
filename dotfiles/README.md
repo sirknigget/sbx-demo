@@ -66,7 +66,8 @@ Cloud cannot mount your host workspace. Setup builds the same kit for ARM64, the
 
 
 ## Example pi prompt with installation + versioned extension creation:
+## (run this from a different project than this one)
 
 ```
-Install this tool globally on this machine: https://snapcraft.io/wther, and then create a pi extension that displays compact weather information on the right half of the screen.
+Install this tool globally on this machine: https://github.com/schachmat/wego, and then create a pi extension that displays visually appealing Tel Aviv weather information from open-meteo on the right half of the screen.
 ```
