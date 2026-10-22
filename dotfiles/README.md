@@ -71,3 +71,35 @@ Cloud cannot mount your host workspace. Setup builds the same kit for ARM64, the
 ```
 Install this tool globally on this machine: https://github.com/schachmat/wego, and then create a pi extension that displays visually appealing Tel Aviv weather information from open-meteo on the right half of the screen.
 ```
+
+
+```
+Build a live Pi token usage dashboard, as a global Pi extension + frontend.
+Frontend should be a React app, and served using vite. Install vite globally.
+
+Start the HTTP server when a normal Pi session loads the extension, on port `8765`, listening on `0.0.0.0`.
+Resolve frontend files and all extension files from the Pi extension’s own location, never from the current working directory or an absolute local workspace path.
+Close the server and connected streams cleanly on Pi session shutdown or reload.
+Report a clear port-in-use error without breaking Pi.
+
+Show a live timeline of agent and tool token consumption: run and turn start/end, tool name, start/end time, duration, and success/error.
+Show the current model and token usage from each completed assistant message: input, output, cache read, cache write, and Pi’s reported total.
+Accumulate each completed message exactly once; do not infer usage from streaming text or double-count cache or reasoning tokens.
+
+Serve the page, a current-state snapshot, and a Server-Sent Events stream from the same port.
+Use only relative browser URLs, with no hard-coded `localhost`, cloud hostname, or CORS dependency.
+Make the stream reconnect after interruption, send heartbeats, and keep a bounded activity history for new viewers.
+Give the page a clear connection indicator, readable activity feed, and token counters.
+
+Protect the page, snapshot, and stream with the same per-process random HTTP Basic password.
+A Pi session start must print the credentials and internal port in Pi’s TUI when the server starts - let the user 
+know clearly that the extension is running, or if an error has occured.
+Never commit the password or place it in a URL.
+
+Verify automatic extension discovery in a fresh Pi process, the HTTP page and stream, event-to-UI updates, token accounting, reconnect behavior, and shutdown/reload cleanup.
+Use synthetic events where practical so verification does not require extra model calls.
+Finish by listing changed files, checks performed, and any limits.
+
+Do not ask for approvals. Install any needed dependencies or tools, and finish this turn only when the task is complete
+and verified.
+```
