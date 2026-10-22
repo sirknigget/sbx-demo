@@ -31,12 +31,15 @@ After making a persistent change outside a project checkout:
 3. Update the template files that own the live change. 
    For example, reproduce global package installs in `Dockerfile`, runtime setup in the appropriate tracked scripts, 
    and user settings in `home/`.
-   Every tracked global project that has dependencies (such as npm or pip) or a build step must
-   set up the active project path during regeneration. Put its idempotent install/build commands
-   in a tracked `home/.config/sbx-demo/post-link.d/*.sh` hook. `link-tracked-home` runs the hooks
-   after linking in local and cloud sandboxes; installing or building a copied home path in
-   `Dockerfile` can be hidden by the later link. Keep system toolchain installs in `Dockerfile`.
-   Make the template reproduce the final installation or configuration, not a description of it.
+   Every tracked global project that has dependencies (such as npm or pip) or a required build step must
+   set up the active project path during regeneration. Put its required install/build commands
+   in a tracked `home/.config/sbx-demo/post-link.d/*.sh` hook, so the project will get installed and built during 
+   sandbox regeneration. `link-tracked-home` runs the hooks after linking in local and cloud sandboxes; 
+   installing or building a copied home path in `Dockerfile` can be hidden by the later link.
+   Test the post-link hook to verify that it installs and builds the project correctly from a fresh state
+   (without regenerating the sandbox).
+   Keep system toolchain installs in `Dockerfile`.
+   Make the template reproduce the final installation, usable build and configuration, not a description of it.
    Do not copy credentials or private state into the checkout. Keep generated project files
    untracked when a linked project builds in the checkout.
    For a new home path, check `home/.local/bin/link-tracked-home`: tracked files link individually,
