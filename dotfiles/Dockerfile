@@ -62,6 +62,9 @@ ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
 
 # Copies only tracked configuration and example commands from this build context.
 COPY --chown=agent:agent home/ /home/agent/
+# Bootstrap the extension in the image; link-tracked-home installs the same locked
+# dependencies in the mounted checkout when it replaces this directory with a link.
+RUN cd /home/agent/.pi/agent/extensions/token-dashboard && npm ci --ignore-scripts
 RUN chmod 755 /home/agent/.local/bin/* \
     && ln -s ../.agents/skills /home/agent/.claude/skills
 ENV BASH_ENV=/home/agent/.config/sbx-demo/shell-env.sh

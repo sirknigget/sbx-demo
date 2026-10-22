@@ -168,6 +168,16 @@ for rel_path in "${DIRECTORY_LINKS[@]}"; do
   link_path "$source_path" "$rel_path"
 done
 
+# Linking Pi extensions replaces the image's bootstrap copy. Install the locked
+# dependencies in the linked checkout too, without checking node_modules into Git.
+dashboard="$SOURCE_DIR/.pi/agent/extensions/token-dashboard"
+if [[ -f "$dashboard/package-lock.json" && ! -d "$dashboard/node_modules/vite" ]]; then
+  printf 'sync .pi/agent/extensions/token-dashboard\n'
+  if ((!DRY_RUN)); then
+    (cd "$dashboard" && npm ci --ignore-scripts >/dev/null)
+  fi
+fi
+
 while IFS= read -r -d '' source_path; do
   rel_path="${source_path#"$SOURCE_DIR"/}"
   if is_directory_link_path "$rel_path"; then
