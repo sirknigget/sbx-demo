@@ -29,9 +29,10 @@ After making a persistent change outside a project checkout:
 2. Read `$MOUNTED_WORKSPACE/sbx-demo/dotfiles/AGENTS.md` before changing the template. Follow its
    guidance and the guidance already provided for the checkout.
 3. Update the template files that own the live change. 
-   For example, reproduce global package installs and global tool fresh install steps (such as running npm install for 
-   a globally available harness extension) in `Dockerfile`, runtime setup in the appropriate tracked scripts, 
+   For example, reproduce global package installs in `Dockerfile`, runtime setup in the appropriate tracked scripts, 
    and user settings in `home/`.
+   Every tracked global project that has dependencies (such as npm or pip) must have their dependencies installed as 
+   part of the sandbox regeneration process, not just in the current live sandbox.
    Make the template reproduce the final installation or configuration, not a description of it.
    Do not copy credentials, private state, or generated files into the checkout.
    For a new home path, check `home/.local/bin/link-tracked-home`: tracked files link individually,
