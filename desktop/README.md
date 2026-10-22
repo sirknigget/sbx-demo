@@ -8,10 +8,17 @@ The setup was tested on an Apple silicon Mac with macOS 14 or later.
 The [Dockerfile](Dockerfile) extends Docker's Codex sandbox image with XFCE,
 Chromium, and [Cua Computer Server](https://github.com/trycua/cua). The
 [kit](kit/spec.yaml) starts the desktop and registers Cua as a desktop MCP
-server for Codex. Cua sends screenshots, clicks, and typing through VNC;
-noVNC streams that same display to a view-only browser tab on your Mac. The
-viewer is bound to `127.0.0.1`, and only this `desktop` folder is shared with
-the sandbox.
+server for Codex.
+
+The desktop runs on a virtual screen inside the sandbox. **VNC** is the remote
+desktop connection to that screen: it carries the screen image out and mouse
+and keyboard actions in. Cua uses VNC so Codex can see and control the desktop
+through its MCP tools.
+
+**noVNC** is a VNC viewer that runs in your browser. It shows you the *same*
+screen Codex controls, so you can watch its actions live without installing a
+VNC app. The browser viewer is view-only and is exposed only on your Mac at
+`127.0.0.1`. Only this `desktop` folder is shared with the sandbox.
 
 ## Set up and connect
 
