@@ -21,7 +21,7 @@ class DotfilesTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.home = self.root / "home"
-        shutil.copytree(ROOT / "home", self.home)
+        self.copy_home(self.home)
         self.mock = self.root / "bin"
         self.mock.mkdir()
         self.env = {
@@ -50,6 +50,12 @@ class DotfilesTests(unittest.TestCase):
           *) printf '%s\\n' "$*" >> "$HOME/docker-calls" ;;
         esac""",
         )
+
+    @staticmethod
+    def copy_home(destination):
+        shutil.copytree(ROOT / "home", destination, ignore=shutil.ignore_patterns("node_modules", "dist"))
+        # Host tests supply their own hooks; the dashboard hook is exercised separately.
+        (destination / ".config/sbx-demo/post-link.d/20-pi-token-dashboard.sh").unlink()
 
     def stub(self, name, body):
         path = self.mock / name
@@ -205,7 +211,7 @@ class DotfilesTests(unittest.TestCase):
 
     def test_fresh_sandbox_links_agent_authored_directories_to_checkout(self):
         source = self.root / "tracked-home"
-        shutil.copytree(ROOT / "home", source)
+        self.copy_home(source)
         directories = (
             ".agents",
             ".claude/agents",
@@ -251,7 +257,7 @@ class DotfilesTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which("npm"), "npm is needed for the build example")
     def test_post_link_project_is_installed_and_built(self):
         source = self.root / "tracked-home"
-        shutil.copytree(ROOT / "home", source)
+        self.copy_home(source)
         project_rel = Path(".agents/skills/buildable-project")
         project = source / project_rel
         dependency = project / "vendor/ready-dependency"
@@ -285,7 +291,7 @@ class DotfilesTests(unittest.TestCase):
             check=True,
         )
         hooks = source / ".config/sbx-demo/post-link.d"
-        hooks.mkdir()
+        hooks.mkdir(exist_ok=True)
         (hooks / "buildable-project.sh").write_text(
             '#!/usr/bin/env bash\nset -euo pipefail\n'
             'cd "$HOME/.agents/skills/buildable-project"\n'
@@ -377,7 +383,7 @@ class DotfilesTests(unittest.TestCase):
 
     def test_linked_preferences_are_not_rewritten_by_auth(self):
         source = self.root / "tracked-home"
-        shutil.copytree(ROOT / "home", source)
+        self.copy_home(source)
         settings = [
             ".codex/config.toml",
             ".codex/sandboxd.config.toml",
@@ -583,7 +589,7 @@ class DotfilesTests(unittest.TestCase):
         self.assertFalse(stale.exists())
         self.assertTrue((staging / ".pi/agent/extensions/weather.ts").is_file())
         tracked_home = self.root / "tracked-home"
-        shutil.copytree(ROOT / "home", tracked_home)
+        self.copy_home(tracked_home)
         tracked_config = (tracked_home / ".codex/config.toml").read_bytes()
         destination.mkdir()
         with self.assertRaisesRegex(RuntimeError, "Link tracked home"):
