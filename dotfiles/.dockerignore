@@ -3,3 +3,5 @@ staging/
 .git/
 __pycache__/
 tests/
+node_modules/
+.pi/agent/extensions/token-dashboard/frontend/dist/

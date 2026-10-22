@@ -57,11 +57,19 @@ ARG CLAUDE_VERSION=2.1.284
 ARG PI_VERSION=0.99.1
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
 RUN npm install -g --ignore-scripts "@earendil-works/pi-coding-agent@${PI_VERSION}"
+# Dashboard build tool and browser test runner are global; Chromium needs OS libraries.
+USER root
+RUN npm install -g vite@8.3.5 playwright@1.64.1 \
+    && /usr/local/share/npm-global/bin/playwright install-deps chromium \
+    && chown -R agent:agent "$NPM_CONFIG_PREFIX"
+USER agent
+RUN playwright install chromium
 ENV IS_SANDBOX=1
 ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
 
 # Copies only tracked configuration and example commands from this build context.
 COPY --chown=agent:agent home/ /home/agent/
+RUN cd /home/agent/.pi/agent/extensions/token-dashboard && npm ci && npm run build
 RUN chmod 755 /home/agent/.local/bin/* \
     && ln -s ../.agents/skills /home/agent/.claude/skills
 ENV BASH_ENV=/home/agent/.config/sbx-demo/shell-env.sh
