@@ -75,21 +75,20 @@ await new Promise(resolve => blocker.close(resolve));
 console.log('PASS port conflict is nonfatal');
 
 const handlers = new Map();
-const notices = [];
+const originalError = console.error;
+console.error = () => {};
 extension({ on: (name, handler) => handlers.set(name, handler) });
-const tui = { mode: 'tui', model: { provider: 'test', id: 'model' }, ui: { notify: (text, type) => notices.push({ text, type }) } };
-await handlers.get('session_start')({ reason: 'startup' }, tui);
-assert.match(notices.at(-1).text, /password: \S+.*0\.0\.0\.0:8765/);
-assert.equal(notices.at(-1).type, 'info');
+await handlers.get('session_start')({ reason: 'startup' }, { model: { provider: 'test', id: 'model' } });
 const beforeReload = await (await fetch(url + 'api/snapshot')).status;
 assert.equal(beforeReload, 401);
 // Reload closes the old listener before starting it again.
 await handlers.get('session_shutdown')({ reason: 'reload' });
 await assert.rejects(fetch(url));
-await handlers.get('session_start')({ reason: 'reload' }, tui);
+await handlers.get('session_start')({ reason: 'reload' }, { model: { provider: 'test', id: 'model' } });
 assert.equal((await fetch(url)).status, 401);
 await handlers.get('session_shutdown')({ reason: 'quit' });
-console.log('PASS TUI notification and extension reload shutdown and restart');
+console.error = originalError;
+console.log('PASS extension reload shutdown and restart');
 
 // A separate Pi process discovers the user extension without --extension; no model call is made.
 const child = spawn('pi', ['--mode', 'rpc', '--no-session', '--offline', '--no-approve'], { cwd: '/tmp', stdio: ['pipe', 'pipe', 'pipe'] });

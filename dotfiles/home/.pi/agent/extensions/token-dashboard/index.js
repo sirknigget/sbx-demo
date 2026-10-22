@@ -133,16 +133,8 @@ export function createDashboard({ port = PORT, log = console.error } = {}) {
 }
 
 export default function (pi) {
-  let sessionContext;
-  const dashboard = createDashboard({ log: message => {
-    if (sessionContext?.mode === 'tui') {
-      sessionContext.ui.notify(message, message.includes('disabled') || message.includes('cannot listen') ? 'error' : 'info');
-    } else {
-      console.error(message);
-    }
-  } });
+  const dashboard = createDashboard();
   pi.on('session_start', async (_event, ctx) => {
-    sessionContext = ctx;
     if (ctx.model) dashboard.setModel(`${ctx.model.provider}/${ctx.model.id}`);
     await dashboard.start();
   });
