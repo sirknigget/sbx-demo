@@ -92,6 +92,37 @@ class DotfilesTests(unittest.TestCase):
                 )
             self.run_script(shell, ROOT / "regenerate_sandbox", "--help")
 
+    # Checks that local ports use host mappings and cloud ports use sandbox numbers.
+    # Runs without a workspace mount because port actions execute on the host.
+    def test_dev_demo_publish_and_unpublish_ports(self):
+        shells = (shell for shell in ("bash", "zsh") if shutil.which(shell))
+        for shell in shells:
+            for action in ("publish", "unpublish"):
+                for cloud, expected in (
+                    (False, f"ports\nsbx-demo\n--{action}\n8765:8765\n"),
+                    (True, f"--cloud\nports\nsbx-demo\n--{action}\n8765\n"),
+                ):
+                    with self.subTest(shell=shell, action=action, cloud=cloud):
+                        args = ("--cloud", action, "8765") if cloud else (action, "8765")
+                        output = self.run_script(shell, ROOT / "dev-demo", *args)
+                        self.assertEqual(output, expected)
+
+    # Rejects invalid port numbers before the sandbox command is called.
+    def test_dev_demo_rejects_invalid_publish_port(self):
+        self.stub("sbx", 'printf "called\\n" >> "$HOME/sbx-calls"')
+        for port in ("0", "70000", "eight"):
+            with self.subTest(port=port):
+                result = subprocess.run(
+                    ["bash", str(ROOT / "dev-demo"), "publish", port],
+                    env=self.env,
+                    cwd=self.root,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.home / "sbx-calls").exists())
+
     def test_cloud_host_commands(self):
         self.stub("sbx", 'printf "%s\\n" "$*" >> "$HOME/sbx-calls"')
         for shell in (shell for shell in ("bash", "zsh") if shutil.which(shell)):

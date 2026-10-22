@@ -2,6 +2,7 @@
 
 # Opens the named sandbox from the current workspace directory.
 # Runs OMP, Pi, Codex, Claude Code, or an interactive Bash shell on the host.
+# Publishes or unpublishes sandbox ports from the host.
 
 # Reads the mount path selected on the host; it can contain other projects.
 WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
@@ -10,12 +11,16 @@ WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
 usage() {
   cat <<'EOF'
 Usage: dev-demo [--cloud] [omp|pi|bash|codex|claude|--help]
+       dev-demo [--cloud] publish PORT
+       dev-demo [--cloud] unpublish PORT
 
 Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
 Run OMP (default), Pi, Bash, Codex, or Claude Code from any directory inside the mount.
 The sandbox opens in the same workspace-relative directory.
 For the cloud sandbox, use --cloud from anywhere. Inside the checkout, the
 relative directory is preserved; elsewhere, it starts at the cloud repo root.
+Publish maps the same port on the local host and sandbox. Cloud publishing
+returns the URL assigned to the sandbox port.
 EOF
 }
 
@@ -30,7 +35,7 @@ case "${1:-omp}" in
     usage
     exit 0
     ;;
-  omp|pi|bash|codex|claude)
+  omp|pi|bash|codex|claude|publish|unpublish)
     command="${1:-omp}"
     ;;
   *)
@@ -38,16 +43,30 @@ case "${1:-omp}" in
     exit 1
     ;;
 esac
+sbx_flags=()
+if ((cloud)); then
+  sbx_flags=(--cloud)
+fi
+
+# Publishes a valid TCP port before workspace path checks.
+# Cloud uses a sandbox port; local mode maps the same host port.
+if [[ "$command" == publish || "$command" == unpublish ]]; then
+  if (( $# != 2 )) || [[ ! "$2" =~ ^[1-9][0-9]{0,4}$ ]] || (( $2 > 65535 )); then
+    usage >&2
+    exit 1
+  fi
+  port_spec="$2"
+  if ((!cloud)); then port_spec="$2:$2"; fi
+  exec sbx "${sbx_flags[@]}" ports sbx-demo "--$command" "$port_spec"
+fi
 if (( $# > 1 )); then
   usage >&2
   exit 1
 fi
 
-sbx_flags=()
 if ((cloud)); then
   local_root="$(cd -- "$(dirname -- "$(realpath "$0")")/.." && pwd -P)"
   WORKSPACE_ROOT=/home/agent/workspace/sbx-demo
-  sbx_flags=(--cloud)
 else
   if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
     printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
