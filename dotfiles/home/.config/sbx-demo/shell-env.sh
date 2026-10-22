@@ -22,3 +22,8 @@ case "${SBX_CRED_ANTHROPIC_MODE:-none}" in
 oauth) export ANTHROPIC_OAUTH_TOKEN=sk-ant-oat01-proxy-managed ;;
 apikey) export ANTHROPIC_API_KEY=proxy-managed ;;
 esac
+
+# Let sandbox Bash use the ordinary commands with the managed provider routing.
+# The launchers exec the installed binaries, so these functions do not recurse.
+pi() { pi-managed "$@"; }
+omp() { omp-managed "$@"; }

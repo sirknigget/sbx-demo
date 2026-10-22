@@ -268,6 +268,42 @@ class DotfilesTests(unittest.TestCase):
             omp = self.run_script("bash", BIN / "omp-managed", "--version", env=env)
             self.assertIn("--approval-mode\nyolo", omp)
 
+    def test_plain_agent_commands_use_managed_auth_in_bash(self):
+        for openai, anthropic in (
+            ("none", "none"),
+            ("oauth", "none"),
+            ("apikey", "none"),
+            ("none", "oauth"),
+            ("none", "apikey"),
+        ):
+            env = {
+                **self.env,
+                "BASH_ENV": str(self.home / ".config/sbx-demo/shell-env.sh"),
+                "SBX_CRED_OPENAI_MODE": openai,
+                "SBX_CRED_ANTHROPIC_MODE": anthropic,
+            }
+            for command in ("pi", "omp"):
+                expected = self.run_script(
+                    "bash", BIN / f"{command}-managed", "--version", env=env
+                )
+                for flags in ("-c", "-ic"):
+                    with self.subTest(
+                        command=command,
+                        flags=flags,
+                        openai=openai,
+                        anthropic=anthropic,
+                    ):
+                        result = subprocess.run(
+                            ["bash", flags, f"{command} --version"],
+                            env=env,
+                            cwd=self.root,
+                            text=True,
+                            capture_output=True,
+                            check=False,
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(result.stdout, expected)
+
     def test_linked_preferences_are_not_rewritten_by_auth(self):
         source = self.root / "tracked-home"
         shutil.copytree(ROOT / "home", source)
