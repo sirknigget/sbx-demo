@@ -248,6 +248,77 @@ class DotfilesTests(unittest.TestCase):
         for relative in directories:
             self.assertTrue((self.home / relative).is_symlink())
 
+    @unittest.skipUnless(shutil.which("npm"), "npm is needed for the build example")
+    def test_post_link_project_is_installed_and_built(self):
+        source = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", source)
+        project_rel = Path(".agents/skills/buildable-project")
+        project = source / project_rel
+        dependency = project / "vendor/ready-dependency"
+        dependency.mkdir(parents=True)
+        (dependency / "package.json").write_text(
+            json.dumps({"name": "ready-dependency", "version": "1.0.0", "main": "index.js"})
+        )
+        (dependency / "index.js").write_text('module.exports = "ready";\n')
+        (project / "package.json").write_text(
+            json.dumps({
+                "name": "buildable-project",
+                "version": "1.0.0",
+                "private": True,
+                "scripts": {"build": "node build.js"},
+                "dependencies": {"ready-dependency": "file:vendor/ready-dependency"},
+            })
+        )
+        (project / "build.js").write_text(
+            'const fs = require("node:fs");\n'
+            'fs.mkdirSync("dist", { recursive: true });\n'
+            'fs.writeFileSync("dist/ready.txt", require("ready-dependency"));\n'
+        )
+        env = {**self.env, "NPM_CONFIG_CACHE": str(self.root / "npm-cache")}
+        subprocess.run(
+            ["npm", "install", "--package-lock-only", "--offline", "--ignore-scripts",
+             "--no-audit", "--no-fund"],
+            cwd=project,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        hooks = source / ".config/sbx-demo/post-link.d"
+        hooks.mkdir()
+        (hooks / "buildable-project.sh").write_text(
+            '#!/usr/bin/env bash\nset -euo pipefail\n'
+            'cd "$HOME/.agents/skills/buildable-project"\n'
+            'npm ci --offline --ignore-scripts --no-audit --no-fund\n'
+            'npm run build\n'
+        )
+
+        # Simulate build output in the image copy, which the directory link replaces.
+        copied_project = self.home / project_rel
+        (copied_project / "dist").mkdir(parents=True)
+        (copied_project / "dist/old.txt").write_text("stale image build")
+        self.run_script("bash", BIN / "link-tracked-home", "--dry-run", str(source), env=env)
+        self.assertFalse((project / "dist").exists())
+
+        self.run_script("bash", BIN / "link-tracked-home", str(source), env=env)
+        active_project = self.home / project_rel
+        self.assertTrue((self.home / ".agents").is_symlink())
+        self.assertEqual((active_project / "dist/ready.txt").read_text(), "ready")
+        self.assertTrue((active_project / "node_modules/ready-dependency/index.js").exists())
+        self.assertFalse((active_project / "dist/old.txt").exists())
+        self.run_script("bash", BIN / "link-tracked-home", str(source), env=env)
+        self.assertEqual((active_project / "dist/ready.txt").read_text(), "ready")
+        (hooks / "buildable-project.sh").write_text("exit 42\n")
+        failed = subprocess.run(
+            ["bash", str(BIN / "link-tracked-home"), str(source)],
+            env=env,
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(failed.returncode, 42, failed.stdout + failed.stderr)
+
     def test_full_permission_launchers(self):
         for mode in ("none", "oauth", "apikey"):
             env = {
