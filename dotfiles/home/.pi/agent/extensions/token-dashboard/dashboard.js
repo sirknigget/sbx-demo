@@ -80,7 +80,7 @@ export function createDashboard({ root, port = 8765, log = console.log, error = 
           res.write(`retry: 1500\ndata: ${JSON.stringify(snapshot())}\n\n`);
           req.on('close', () => streams.delete(res));
         } else if (req.method === 'GET' && (path === '/' || path === '/index.html')) {
-          readFile(join(root, 'index.html'), 'utf8').then(html => vite.transformIndexHtml(path, html)).then(html => {
+          readFile(join(root, 'index.html'), 'utf8').then(html => {
             res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html);
           }).catch(() => { res.writeHead(500); res.end('Page unavailable'); });
         } else if (req.method === 'GET' && path.startsWith('/assets/')) {
