@@ -49,7 +49,7 @@ The workspace is mounted into the sandbox. Edits on either side appear in the sa
 3. From the repository root, build and launch:
 
    ```bash
-   ./regenerate_sandbox --cloud
+   ./dotfiles/regenerate_sandbox --cloud
    dev-demo --cloud pi
    ```
 
