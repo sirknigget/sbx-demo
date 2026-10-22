@@ -40,6 +40,16 @@ def check_path(path, base):
             break
 
 
+def linked_path(path, base):
+    """A linked destination belongs to the repo or another existing owner."""
+    for part in (path, *path.parents):
+        if part.is_symlink():
+            return True
+        if part == base:
+            break
+    return False
+
+
 def copy(source, target, mode):
     target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     if sqlite(source):
@@ -73,10 +83,14 @@ def transfer(mode, home, staging):
             if temporary.exists():
                 shutil.rmtree(temporary)
     else:
+        if not (home / ".local/bin/link-tracked-home").is_symlink():
+            raise RuntimeError("Link tracked home before importing agent state")
         for relative in ROOTS:
             check_path(staging / relative, staging)
         entries = [(source, home / source.relative_to(staging))
                    for relative in ROOTS for source in files(staging / relative)]
+        entries = [(source, target) for source, target in entries
+                   if not linked_path(target, home)]
         # Validate every destination and database before importing anything.
         for source, target in entries:
             check_path(target, home)

@@ -92,6 +92,100 @@ class DotfilesTests(unittest.TestCase):
                 )
             self.run_script(shell, ROOT / "regenerate_sandbox", "--help")
 
+    # Checks that local ports use host mappings and cloud ports use sandbox numbers.
+    # Runs without a workspace mount because port actions execute on the host.
+    def test_dev_demo_publish_and_unpublish_ports(self):
+        shells = (shell for shell in ("bash", "zsh") if shutil.which(shell))
+        for shell in shells:
+            for action in ("publish", "unpublish"):
+                for cloud, expected in (
+                    (False, f"ports\nsbx-demo\n--{action}\n8765:8765\n"),
+                    (True, f"--cloud\nports\nsbx-demo\n--{action}\n8765\n"),
+                ):
+                    with self.subTest(shell=shell, action=action, cloud=cloud):
+                        args = ("--cloud", action, "8765") if cloud else (action, "8765")
+                        output = self.run_script(shell, ROOT / "dev-demo", *args)
+                        self.assertEqual(output, expected)
+
+    # Rejects invalid port numbers before the sandbox command is called.
+    def test_dev_demo_rejects_invalid_publish_port(self):
+        self.stub("sbx", 'printf "called\\n" >> "$HOME/sbx-calls"')
+        for port in ("0", "70000", "eight"):
+            with self.subTest(port=port):
+                result = subprocess.run(
+                    ["bash", str(ROOT / "dev-demo"), "publish", port],
+                    env=self.env,
+                    cwd=self.root,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.home / "sbx-calls").exists())
+
+    def test_cloud_host_commands(self):
+        self.stub("sbx", 'printf "%s\\n" "$*" >> "$HOME/sbx-calls"')
+        for shell in (shell for shell in ("bash", "zsh") if shutil.which(shell)):
+            log = self.home / "sbx-calls"
+            log.unlink(missing_ok=True)
+            self.run_script(shell, ROOT / "regenerate_sandbox", "--cloud")
+            calls = log.read_text().splitlines()
+            self.assertIn("--cloud ls --quiet", calls)
+            self.assertTrue(any("--cloud create --name sbx-demo --platform linux/arm64" in call for call in calls))
+            self.assertTrue(any("--allow-network ** " in call for call in calls))
+            self.assertTrue(any("--cloud exec sbx-demo git clone https://github.com/" in call for call in calls))
+            self.assertTrue(any("--cloud exec sbx-demo bash -lc link-tracked-home" in call for call in calls))
+            log.unlink()
+            subprocess.run(
+                [shell, str(ROOT / "dev-demo"), "--cloud", "bash"],
+                env=self.env,
+                cwd=ROOT.parent,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn("--cloud exec -it -w /home/agent/workspace/sbx-demo/.", log.read_text())
+            launcher = self.root / "dev-demo"
+            launcher.symlink_to(ROOT / "dev-demo")
+            log.unlink()
+            subprocess.run(
+                [shell, str(launcher), "--cloud", "pi"],
+                env=self.env,
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn(
+                "--cloud exec -it -w /home/agent/workspace/sbx-demo/dotfiles sbx-demo",
+                log.read_text(),
+            )
+            log.unlink()
+            subprocess.run(
+                [shell, str(launcher), "--cloud", "pi"],
+                env=self.env,
+                cwd=self.root,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            self.assertIn(
+                "--cloud exec -it -w /home/agent/workspace/sbx-demo/. sbx-demo",
+                log.read_text(),
+            )
+            launcher.unlink()
+
+        self.stub("sbx", 'if [ "$*" = "--cloud ls --quiet" ]; then printf "dotfiles/sbx-demo\\n"; else printf "%s\\n" "$*" >> "$HOME/sbx-calls"; fi')
+        result = subprocess.run(
+            ["bash", str(ROOT / "regenerate_sandbox"), "--cloud"],
+            env=self.env,
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cloud sandbox already exists", result.stderr)
+
     def test_sandbox_commands(self):
         for script in [ROOT / "copy-state.sh", *BIN.iterdir()]:
             subprocess.run(["bash", "-n", str(script)], check=True)
@@ -108,6 +202,122 @@ class DotfilesTests(unittest.TestCase):
             self.assertIn("--version", output)
             if mode == "oauth":
                 self.assertIn("openai-codex", output)
+
+    def test_fresh_sandbox_links_agent_authored_directories_to_checkout(self):
+        source = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", source)
+        directories = (
+            ".agents",
+            ".claude/agents",
+            ".claude/rules",
+            ".codex/agents",
+            ".codex/rules",
+            ".pi/agent/extensions",
+            ".pi/agent/prompts",
+            ".pi/agent/themes",
+            ".omp/agent/agents",
+            ".omp/agent/commands",
+            ".omp/agent/extensions",
+            ".omp/agent/hooks",
+            ".omp/agent/instructions",
+            ".omp/agent/prompts",
+            ".omp/agent/rules",
+            ".omp/agent/themes",
+            ".omp/agent/tools",
+        )
+        self.assertTrue((source / ".pi/agent/extensions/.gitkeep").is_file())
+        auth = self.home / ".pi/agent/auth.json"
+        auth.write_text("private sandbox state")
+
+        self.run_script("bash", BIN / "link-tracked-home", str(source))
+        for relative in directories:
+            with self.subTest(path=relative):
+                linked = self.home / relative
+                tracked = source / relative
+                self.assertTrue(linked.is_symlink())
+                self.assertEqual(linked.resolve(), tracked.resolve())
+                (linked / "created.example").write_text(relative)
+                self.assertEqual((tracked / "created.example").read_text(), relative)
+        self.assertFalse((self.home / ".pi/agent/skills").exists())
+        self.assertEqual(
+            (self.home / ".claude/skills").resolve(),
+            (source / ".agents/skills").resolve(),
+        )
+        self.assertEqual(auth.read_text(), "private sandbox state")
+        self.run_script("bash", BIN / "link-tracked-home", str(source))
+        for relative in directories:
+            self.assertTrue((self.home / relative).is_symlink())
+
+    @unittest.skipUnless(shutil.which("npm"), "npm is needed for the build example")
+    def test_post_link_project_is_installed_and_built(self):
+        source = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", source)
+        project_rel = Path(".agents/skills/buildable-project")
+        project = source / project_rel
+        dependency = project / "vendor/ready-dependency"
+        dependency.mkdir(parents=True)
+        (dependency / "package.json").write_text(
+            json.dumps({"name": "ready-dependency", "version": "1.0.0", "main": "index.js"})
+        )
+        (dependency / "index.js").write_text('module.exports = "ready";\n')
+        (project / "package.json").write_text(
+            json.dumps({
+                "name": "buildable-project",
+                "version": "1.0.0",
+                "private": True,
+                "scripts": {"build": "node build.js"},
+                "dependencies": {"ready-dependency": "file:vendor/ready-dependency"},
+            })
+        )
+        (project / "build.js").write_text(
+            'const fs = require("node:fs");\n'
+            'fs.mkdirSync("dist", { recursive: true });\n'
+            'fs.writeFileSync("dist/ready.txt", require("ready-dependency"));\n'
+        )
+        env = {**self.env, "NPM_CONFIG_CACHE": str(self.root / "npm-cache")}
+        subprocess.run(
+            ["npm", "install", "--package-lock-only", "--offline", "--ignore-scripts",
+             "--no-audit", "--no-fund"],
+            cwd=project,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        hooks = source / ".config/sbx-demo/post-link.d"
+        hooks.mkdir()
+        (hooks / "buildable-project.sh").write_text(
+            '#!/usr/bin/env bash\nset -euo pipefail\n'
+            'cd "$HOME/.agents/skills/buildable-project"\n'
+            'npm ci --offline --ignore-scripts --no-audit --no-fund\n'
+            'npm run build\n'
+        )
+
+        # Simulate build output in the image copy, which the directory link replaces.
+        copied_project = self.home / project_rel
+        (copied_project / "dist").mkdir(parents=True)
+        (copied_project / "dist/old.txt").write_text("stale image build")
+        self.run_script("bash", BIN / "link-tracked-home", "--dry-run", str(source), env=env)
+        self.assertFalse((project / "dist").exists())
+
+        self.run_script("bash", BIN / "link-tracked-home", str(source), env=env)
+        active_project = self.home / project_rel
+        self.assertTrue((self.home / ".agents").is_symlink())
+        self.assertEqual((active_project / "dist/ready.txt").read_text(), "ready")
+        self.assertTrue((active_project / "node_modules/ready-dependency/index.js").exists())
+        self.assertFalse((active_project / "dist/old.txt").exists())
+        self.run_script("bash", BIN / "link-tracked-home", str(source), env=env)
+        self.assertEqual((active_project / "dist/ready.txt").read_text(), "ready")
+        (hooks / "buildable-project.sh").write_text("exit 42\n")
+        failed = subprocess.run(
+            ["bash", str(BIN / "link-tracked-home"), str(source)],
+            env=env,
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(failed.returncode, 42, failed.stdout + failed.stderr)
 
     def test_full_permission_launchers(self):
         for mode in ("none", "oauth", "apikey"):
@@ -128,6 +338,42 @@ class DotfilesTests(unittest.TestCase):
             self.assertIn("--approve", pi)
             omp = self.run_script("bash", BIN / "omp-managed", "--version", env=env)
             self.assertIn("--approval-mode\nyolo", omp)
+
+    def test_plain_agent_commands_use_managed_auth_in_bash(self):
+        for openai, anthropic in (
+            ("none", "none"),
+            ("oauth", "none"),
+            ("apikey", "none"),
+            ("none", "oauth"),
+            ("none", "apikey"),
+        ):
+            env = {
+                **self.env,
+                "BASH_ENV": str(self.home / ".config/sbx-demo/shell-env.sh"),
+                "SBX_CRED_OPENAI_MODE": openai,
+                "SBX_CRED_ANTHROPIC_MODE": anthropic,
+            }
+            for command in ("pi", "omp"):
+                expected = self.run_script(
+                    "bash", BIN / f"{command}-managed", "--version", env=env
+                )
+                for flags in ("-c", "-ic"):
+                    with self.subTest(
+                        command=command,
+                        flags=flags,
+                        openai=openai,
+                        anthropic=anthropic,
+                    ):
+                        result = subprocess.run(
+                            ["bash", flags, f"{command} --version"],
+                            env=env,
+                            cwd=self.root,
+                            text=True,
+                            capture_output=True,
+                            check=False,
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        self.assertEqual(result.stdout, expected)
 
     def test_linked_preferences_are_not_rewritten_by_auth(self):
         source = self.root / "tracked-home"
@@ -216,9 +462,11 @@ class DotfilesTests(unittest.TestCase):
             restore = next(
                 i for i, line in enumerate(calls) if "copy-state.sh import" in line
             )
+            link = next(i for i, line in enumerate(calls) if "link-tracked-home" in line)
             self.assertLess(export, create)
             self.assertLess(create, backup)
-            self.assertLess(backup, restore)
+            self.assertLess(backup, link)
+            self.assertLess(link, restore)
             # The same file can hold more than the mount path.
             env_path = self.home / ".config/sbx-demo/persistent-env.sh"
             with env_path.open("a") as env_file:
@@ -313,10 +561,14 @@ class DotfilesTests(unittest.TestCase):
             self.addCleanup(connection.close)
         for relative in (
             ".omp/.env",
+            ".codex/config.toml",
             ".codex/sessions/session.jsonl",
+            ".claude/settings.json",
             ".claude/projects/session.jsonl",
             ".claude.json",
             ".pi/agent/auth.json",
+            ".pi/agent/settings.json",
+            ".pi/agent/extensions/weather.ts",
             ".pi/agent/sessions/session.jsonl",
         ):
             path = source / relative
@@ -329,7 +581,18 @@ class DotfilesTests(unittest.TestCase):
         stale.write_text("old")
         state.transfer("export", source, staging)
         self.assertFalse(stale.exists())
+        self.assertTrue((staging / ".pi/agent/extensions/weather.ts").is_file())
+        tracked_home = self.root / "tracked-home"
+        shutil.copytree(ROOT / "home", tracked_home)
+        tracked_config = (tracked_home / ".codex/config.toml").read_bytes()
         destination.mkdir()
+        with self.assertRaisesRegex(RuntimeError, "Link tracked home"):
+            state.transfer("import", destination, staging)
+        self.run_script(
+            "bash", BIN / "link-tracked-home", str(tracked_home),
+            env={**self.env, "HOME": str(destination)},
+        )
+        self.assertTrue((destination / ".local/bin/link-tracked-home").is_symlink())
         previous_path = os.environ["PATH"]
         os.environ["PATH"] = self.env["PATH"]
         try:
@@ -343,14 +606,20 @@ class DotfilesTests(unittest.TestCase):
             self.assertEqual(
                 (destination / ".pi/agent/auth.json").stat().st_mode & 0o777, 0o600
             )
+            self.assertEqual((tracked_home / ".codex/config.toml").read_bytes(), tracked_config)
+            self.assertTrue((destination / ".pi/agent/extensions").is_symlink())
+            self.assertFalse((tracked_home / ".pi/agent/extensions/weather.ts").exists())
+            self.assertNotEqual((destination / ".pi/agent/settings.json").read_text(), "fixture")
             self.stub("lsof", "printf '123\\n'")
             with self.assertRaisesRegex(RuntimeError, "Stop OMP"):
                 state.transfer("import", destination, staging)
             self.stub("lsof", "exit 1")
             (destination / ".claude.json").unlink()
             (destination / ".claude.json").symlink_to(self.home / ".gitconfig")
-            with self.assertRaisesRegex(RuntimeError, "symlink"):
-                state.transfer("import", destination, staging)
+            original_gitconfig = (self.home / ".gitconfig").read_bytes()
+            state.transfer("import", destination, staging)
+            self.assertTrue((destination / ".claude.json").is_symlink())
+            self.assertEqual((self.home / ".gitconfig").read_bytes(), original_gitconfig)
         finally:
             os.environ["PATH"] = previous_path
 

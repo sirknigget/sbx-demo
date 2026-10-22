@@ -2,6 +2,7 @@
 
 # Opens the named sandbox from the current workspace directory.
 # Runs OMP, Pi, Codex, Claude Code, or an interactive Bash shell on the host.
+# Publishes or unpublishes sandbox ports from the host.
 
 # Reads the mount path selected on the host; it can contain other projects.
 WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
@@ -9,20 +10,32 @@ WORKSPACE_ROOT="${SBX_DEMO_WORKSPACE:-}"
 # Prints the supported host commands without starting the sandbox.
 usage() {
   cat <<'EOF'
-Usage: dev-demo [omp|pi|bash|codex|claude|--help]
+Usage: dev-demo [--cloud] [omp|pi|bash|codex|claude|--help]
+       dev-demo [--cloud] publish PORT
+       dev-demo [--cloud] unpublish PORT
 
 Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.
 Run OMP (default), Pi, Bash, Codex, or Claude Code from any directory inside the mount.
 The sandbox opens in the same workspace-relative directory.
+For the cloud sandbox, use --cloud from anywhere. Inside the checkout, the
+relative directory is preserved; elsewhere, it starts at the cloud repo root.
+Publish maps the same port on the local host and sandbox. Cloud publishing
+returns the URL assigned to the sandbox port.
 EOF
 }
+
+cloud=0
+if [[ "${1:-}" == --cloud ]]; then
+  cloud=1
+  shift
+fi
 
 case "${1:-omp}" in
   --help|-h|help)
     usage
     exit 0
     ;;
-  omp|pi|bash|codex|claude)
+  omp|pi|bash|codex|claude|publish|unpublish)
     command="${1:-omp}"
     ;;
   *)
@@ -30,34 +43,60 @@ case "${1:-omp}" in
     exit 1
     ;;
 esac
+sbx_flags=()
+if ((cloud)); then
+  sbx_flags=(--cloud)
+fi
+
+# Publishes a valid TCP port before workspace path checks.
+# Cloud uses a sandbox port; local mode maps the same host port.
+if [[ "$command" == publish || "$command" == unpublish ]]; then
+  if (( $# != 2 )) || [[ ! "$2" =~ ^[1-9][0-9]{0,4}$ ]] || (( $2 > 65535 )); then
+    usage >&2
+    exit 1
+  fi
+  port_spec="$2"
+  if ((!cloud)); then port_spec="$2:$2"; fi
+  exec sbx "${sbx_flags[@]}" ports sbx-demo "--$command" "$port_spec"
+fi
 if (( $# > 1 )); then
   usage >&2
   exit 1
 fi
 
-if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
-  printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
-  exit 2
+if ((cloud)); then
+  local_root="$(cd -- "$(dirname -- "$(realpath "$0")")/.." && pwd -P)"
+  WORKSPACE_ROOT=/home/agent/workspace/sbx-demo
+else
+  if [[ "$WORKSPACE_ROOT" != /* || ! -d "$WORKSPACE_ROOT" ]]; then
+    printf '%s\n' 'Error: Set SBX_DEMO_WORKSPACE to the absolute directory mounted into sbx-demo.' >&2
+    exit 2
+  fi
+  WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
+  local_root="$WORKSPACE_ROOT"
 fi
-WORKSPACE_ROOT="$(cd -- "$WORKSPACE_ROOT" && pwd -P)"
 
 current_dir="$(pwd -P)"
-if [[ "$current_dir" == "$WORKSPACE_ROOT" ]]; then
+if [[ "$current_dir" == "$local_root" ]]; then
   relative_dir=.
-elif [[ "$current_dir" == "$WORKSPACE_ROOT/"* ]]; then
-  relative_dir="${current_dir#$WORKSPACE_ROOT/}"
+elif [[ "$current_dir" == "$local_root/"* ]]; then
+  relative_dir="${current_dir#$local_root/}"
 else
-  printf '%s\n' "Error: Current directory is not inside $WORKSPACE_ROOT" >&2
-  exit 1
+  if ((cloud)); then
+    relative_dir=.
+  else
+    printf '%s\n' "Error: Current directory is not inside $local_root" >&2
+    exit 1
+  fi
 fi
 
 if [[ "$command" == bash ]]; then
-  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
+  exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -il
 fi
 if [[ "$command" == pi ]]; then command=pi-managed; fi
 if [[ "$command" == codex || "$command" == claude || "$command" == pi-managed ]]; then
-  exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc 'exec "$1"' bash "$command"
+  exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc 'exec "$1"' bash "$command"
 fi
-exec sbx exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
+exec sbx "${sbx_flags[@]}" exec -it -w "$WORKSPACE_ROOT/$relative_dir" sbx-demo bash -lc '
   exec omp-managed
 '

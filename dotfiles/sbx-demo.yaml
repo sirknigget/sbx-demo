@@ -8,6 +8,7 @@ dockerfile: Dockerfile
 capabilities:
   - type: com.docker.sandbox/sbx@1
   - type: com.docker.sandbox/privileged@1
+    optional: true
   - type: com.docker.sandbox/network-policy@1
     config:
       runtime:
