@@ -32,7 +32,8 @@ After making a persistent change outside a project checkout:
    For example, reproduce global package installs and global tool fresh install steps (such as running npm install for 
    a globally available harness extension) in `Dockerfile`, runtime setup in the appropriate tracked scripts, 
    and user settings in `home/`.
-   Make the template reproduce the final installation or configuration, not a description of it.
+   Make the template reproduce the final installation or configuration, not a description of it - 
+   a regenerated sandbox should reproduce the change without manual intervention.
    Do not copy credentials, private state, or generated files into the checkout.
    For a new home path, check `home/.local/bin/link-tracked-home`: tracked files link individually,
    but a directory that must capture future files needs an entry in `DIRECTORY_LINKS` and a
