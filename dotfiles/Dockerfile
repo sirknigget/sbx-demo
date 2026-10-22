@@ -57,6 +57,7 @@ ARG CLAUDE_VERSION=2.1.284
 ARG PI_VERSION=0.99.1
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" "@anthropic-ai/claude-code@${CLAUDE_VERSION}"
 RUN npm install -g --ignore-scripts "@earendil-works/pi-coding-agent@${PI_VERSION}"
+RUN npm install -g vite@8.3.5
 ENV IS_SANDBOX=1
 ENV CLAUDE_ENV_FILE=/etc/sandbox-persistent.sh
 
