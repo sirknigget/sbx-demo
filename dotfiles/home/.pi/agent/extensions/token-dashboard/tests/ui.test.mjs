@@ -29,10 +29,11 @@ test('SSE snapshots render counters and events; reconnect updates status', async
     dom.window.eval(script);
     for (let i = 0; i < 20 && streams.length === 0; i++) await tick();
     assert.equal(streams.length, 1);
-    streams[0].emit({ model: 'test/model', totals: { input: 2, output: 3, cacheRead: 5, cacheWrite: 7, totalTokens: 17 }, activities: [{ id: 'tool:1', kind: 'tool', label: 'bash', start: 1000, end: 2000, duration: 1000, status: 'error' }] });
+    streams[0].emit({ model: 'test/model', totals: { input: 2, output: 3, cacheRead: 5, cacheWrite: 7, totalTokens: 17 }, activities: [{ id: 'tool:1', kind: 'tool', label: 'bash', start: 1000, end: 2000, duration: 1000, status: 'error' }, { id: 'message:1', kind: 'message', label: 'test/model', start: 1000, end: 2000, duration: 1000, status: 'success', usage: { input: 2, output: 3, cacheRead: 5, cacheWrite: 7, totalTokens: 17 } }] });
     await tick();
     assert.equal(dom.window.document.querySelector('[data-counter="totalTokens"]').textContent, '17');
     assert.match(dom.window.document.querySelector('[data-activity="tool"]').textContent, /bash/);
+    assert.match(dom.window.document.querySelector('[data-activity="message"]').textContent, /In 2 · Out 3 · Cache read 5 · Cache write 7/);
     assert.match(dom.window.document.querySelector('[role="status"]').textContent, /Live/);
     streams[0].onerror();
     await tick();
