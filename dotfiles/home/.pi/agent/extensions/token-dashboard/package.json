@@ -1,0 +1,7 @@
+{
+  "name": "pi-token-dashboard",
+  "private": true,
+  "type": "module",
+  "scripts": {"dev": "vite frontend --host 0.0.0.0", "build": "vite build frontend", "test": "node --test test/*.test.mjs"},
+  "dependencies": {"react": "^19.0.0", "react-dom": "^19.0.0", "vite": "^8.0.5"}
+}
